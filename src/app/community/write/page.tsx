@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"; // 🌟 지워졌던 useRouter 복�
 import dynamic from "next/dynamic"; // 🌟 지워졌던 dynamic 복구!
 import "react-quill-new/dist/quill.snow.css";
 import { createClient } from "../../../lib/supabaseClient";
-import Script from "next/script"; 
+import KakaoAd from "../../../components/KakaoAd";
 
 // 🌟 지워졌던 에디터 설정 복구! (이게 없어서 ReactQuill 에러가 났습니다)
 const ReactQuill = dynamic(() => import("react-quill-new"), { 
@@ -154,26 +154,18 @@ export default function WritePage() {
   return (
     <div className="view active">
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
-        <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-61T83j6HkgDDyPRJ" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
-        </div>
-
-        <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-q2LTq4MFcYdFmszx" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
-        </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고   시작 */}
+            {/* 📢 기기별 맞춤 카카오 애드핏 광고 */}
+            <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+              <div className="ad-pc">
+                <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
+              </div>
+      
+              <div className="ad-mobile">
+                <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
+              </div>
+            </div>
+            {/* 📢 카카오 애드핏 광고 끝 */}
 
       <div className="header-title-bar" style={{ borderBottom: "2px solid #111", paddingBottom: "15px", marginBottom: "20px" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0 }}>새 글 쓰기</h2>

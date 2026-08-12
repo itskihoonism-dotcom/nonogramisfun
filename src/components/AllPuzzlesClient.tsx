@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Script from "next/script"; // 🌟 추가
+import KakaoAd from "../components/KakaoAd";
 
 // 날짜 포맷 및 N 뱃지 함수
 function formatDate(dateStr: string) {
@@ -76,26 +76,21 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
   return (
     <div className="view active" style={{ display: "block", minHeight: "100vh" }}>
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
-        <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-JpEOwXzUOs9jTxSy" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
-        </div>
-
-        <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-sA8hy7KHOiESBxQC" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
-        </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 
+      DAN-JpEOwXzUOs9jTxSy
+      DAN-sA8hy7KHOiESBxQC
+      */}
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 (새 부품 적용 완료!) */}
+            <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+              <div className="ad-pc">
+                <KakaoAd unit="DAN-JpEOwXzUOs9jTxSy" width="728" height="90" />
+              </div>
+      
+              <div className="ad-mobile">
+                <KakaoAd unit="DAN-sA8hy7KHOiESBxQC" width="320" height="100" />
+              </div>
+            </div>
+            {/* 📢 카카오 애드핏 광고 끝 */}
 
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #222", marginBottom: "25px", paddingBottom: "12px" }}>

@@ -1,7 +1,7 @@
 import { createClient } from "../lib/supabaseServer";
 import Link from "next/link";
 import MainClientArea from "../components/MainClientArea";
-import Script from "next/script";
+import KakaoAd from "../components/KakaoAd";
 
 export const dynamic = "force-dynamic";
 
@@ -43,24 +43,16 @@ export default async function HomePage() {
   return (
     <div className="view active" style={{ display: "block", minHeight: "100vh" }}>
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
+      
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 (새 부품 적용 완료!) */}
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
         <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-O2E3DDgytFclBz0h" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
+          <KakaoAd unit="DAN-O2E3DDgytFclBz0h" width="728" height="90" />
         </div>
 
         <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-sLAHjYV35LtARQ77" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
+          <KakaoAd unit="DAN-sLAHjYV35LtARQ77" width="320" height="100" />
         </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
       </div>
       {/* 📢 카카오 애드핏 광고 끝 */}
       

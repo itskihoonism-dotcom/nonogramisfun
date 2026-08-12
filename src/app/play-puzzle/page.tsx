@@ -1,7 +1,7 @@
 import { createClient } from "../../lib/supabaseServer";
 import Link from "next/link";
 import PlayPuzzleClient from "../../components/PlayPuzzleClient";
-import Script from "next/script";
+import KakaoAd from "../../components/KakaoAd";
 
 export const metadata = {
   title: "퍼즐 플레이 | NONOGRAM IS FUN",
@@ -37,26 +37,17 @@ export default async function PlayPuzzlePage({ searchParams }: { searchParams: a
   return (
     <div className="view active" style={{ display: "block" }}>
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
-        <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-PmtHgQAd8c5EQtcy" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
-        </div>
-
-        <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-lsUhERRXp3RaORnD" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
-        </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
+      
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+                          <div className="ad-pc">
+                            <KakaoAd unit="DAN-PmtHgQAd8c5EQtcy" width="728" height="90" />
+                          </div>
+                  
+                          <div className="ad-mobile">
+                            <KakaoAd unit="DAN-lsUhERRXp3RaORnD" width="320" height="100" />
+                          </div>
+                        </div>
+                        {/* 📢 카카오 애드핏 광고 끝 */}
 
 
       <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", margin: "0 0 15px 0", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>

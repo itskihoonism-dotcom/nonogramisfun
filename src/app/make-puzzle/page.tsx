@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
-import Script from "next/script";
+import KakaoAd from "../../components/KakaoAd";
 
 
 
@@ -279,26 +279,18 @@ export default function MakePuzzlePage() {
   return (
     <div className="view active" style={{ display: "block", position: "relative" }}>
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
-        <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-K4gZlnAmDITkywyy" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
-        </div>
-
-        <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-z2i2KQMpyEbevIDZ" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
-        </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고DAN-K4gZlnAmDITkywyy
+      DAN-z2i2KQMpyEbevIDZ시작 */}
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+              <div className="ad-pc">
+                <KakaoAd unit="DAN-K4gZlnAmDITkywyy" width="728" height="90" />
+              </div>
+      
+              <div className="ad-mobile">
+                <KakaoAd unit="DAN-z2i2KQMpyEbevIDZ" width="320" height="100" />
+              </div>
+            </div>
+            {/* 📢 카카오 애드핏 광고 끝 */}
       
       {/* 크기 입력 모달 */}
       {isModalOpen && (

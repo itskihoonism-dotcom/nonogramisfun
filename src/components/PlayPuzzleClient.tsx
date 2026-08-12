@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import Script from "next/script";
+import KakaoAd from "./KakaoAd";
 
 export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const w = puzzle.width;
@@ -414,24 +414,16 @@ useEffect(() => {
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
 
-      {/* 🌟 여기에 전체화면 전용 광고 추가! (isFullscreen이 true일 때만 렌더링) */}
+      {/* 🌟 전체화면 전용 광고 (새로운 컴포넌트 적용 완료!) */}
       {isFullscreen && (
         <div style={{ marginTop: "20px", width: "100%", display: "flex", justifyContent: "center", paddingBottom: "30px" }}>
-          
           <div>
             <div className="ad-pc">
-              <ins className="kakao_ad_area" style={{ display: "none" }}
-                data-ad-unit="DAN-PmtHgQAd8c5EQtcy" 
-                data-ad-width="728" 
-                data-ad-height="90"></ins>
+              <KakaoAd unit="DAN-PmtHgQAd8c5EQtcy" width="728" height="90" />
             </div>
             <div className="ad-mobile">
-              <ins className="kakao_ad_area" style={{ display: "none" }}
-                data-ad-unit="DAN-lsUhERRXp3RaORnD" 
-                data-ad-width="320" 
-                data-ad-height="100"></ins>
+              <KakaoAd unit="DAN-lsUhERRXp3RaORnD" width="320" height="100" />
             </div>
-            <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import { createClient } from "../../lib/supabaseServer";
 import Link from "next/link";
 import SearchBox from "../../components/SearchBox";
 import Pagination from "../../components/Pagination";
-import Script from "next/script"; 
+import KakaoAd from "../../components/KakaoAd";
 
 export const dynamic = "force-dynamic";
 
@@ -123,26 +123,19 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
   return (
     <div className="view active">
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고   시작 */}
+      {/* 📢 기기별 맞춤 카카오 애드핏 광고 */}
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
         <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-61T83j6HkgDDyPRJ" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
+          <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
         </div>
 
         <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-q2LTq4MFcYdFmszx" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
+          <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
         </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
       </div>
       {/* 📢 카카오 애드핏 광고 끝 */}
+
       <div className="header-title-bar"><h2>💬 자유 게시판</h2></div>
       
       

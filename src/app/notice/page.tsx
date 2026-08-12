@@ -1,6 +1,6 @@
 import { createClient } from "../../lib/supabaseServer";
 import NoticeClient from "../../components/NoticeClient";
-import Script from "next/script";
+import KakaoAd from "../../components/KakaoAd";
 
 export const metadata = {
   title: "공지사항 | NONOGRAM IS FUN",
@@ -49,26 +49,17 @@ export default async function NoticePage({ searchParams }: { searchParams: any }
       targetId={targetId} 
     />
 
-    {/* 📢 기기별 맞춤 카카오 애드핏 광고 시작 */}
-      <div>
-        <div className="ad-pc">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-r7UxzhMfPVZQilVh" 
-            data-ad-width="728" 
-            data-ad-height="90"></ins>
-        </div>
-
-        <div className="ad-mobile">
-          <ins className="kakao_ad_area" style={{ display: "none" }}
-            data-ad-unit="DAN-8gBtol149cRHiI4x" 
-            data-ad-width="320" 
-            data-ad-height="100"></ins>
-        </div>
-        
-        {/* 🌟 Next.js 방식의 카카오 애드핏 스크립트 실행 */}
-        <Script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" strategy="lazyOnload" />
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
+    
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+                    <div className="ad-pc">
+                      <KakaoAd unit="DAN-r7UxzhMfPVZQilVh" width="728" height="90" />
+                    </div>
+            
+                    <div className="ad-mobile">
+                      <KakaoAd unit="DAN-8gBtol149cRHiI4x" width="320" height="100" />
+                    </div>
+                  </div>
+                  {/* 📢 카카오 애드핏 광고 끝 */}
 
     </>
 
