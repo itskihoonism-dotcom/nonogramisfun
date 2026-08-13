@@ -314,11 +314,15 @@ useEffect(() => {
           background: transparent !important;
           display: block !important; /* 🌟 flex 대신 block을 써야 위쪽이 안 잘림 */
         }
+        #play-area:fullscreen .toolbar-bar, #play-area:-webkit-full-screen .toolbar-bar {
+          display: flex !important; /* 🌟 전체화면에서도 버튼들이 한 줄에 나오도록 flex 유지 */
+          flex-wrap: nowrap !important;
+        }
       `}</style>
 
       <div id="drag-count-tooltip" ref={tooltipRef} className="drag-tooltip" style={{ position: "fixed", display: "none", background: "#2196F3", color: "white", border: "2px solid white", borderRadius: "50%", width: "32px", height: "32px", textAlign: "center", lineHeight: "28px", fontWeight: "bold", fontSize: "14px", pointerEvents: "none", zIndex: 9999, transform: "translate(15px, -35px)" }}>1</div>
-      
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px", marginBottom: "15px" }}>
+
+      <div className="toolbar-bar" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px", marginBottom: "15px" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #ddd" }}>
           <span style={{ fontSize: "14px", fontWeight: "bold" }}>🔎 줌: </span>
           <button onClick={() => setZoomFactor(z => Math.min(3.0, z + 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>+</button>
