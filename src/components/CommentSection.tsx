@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "../lib/supabaseClient";
 import { useRouter } from "next/navigation";
-
-const SUPABASE_URL = "https://jxwhdiwwgtnyyqenkpvw.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4d2hkaXd3Z3RueXlxZW5rcHZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDQ3NjgsImV4cCI6MjEwMTU4MDc2OH0.e76mCgwu-v8W-cuu3fR4_4jQ9gwP60MCCESzAgoBQaU";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function CommentSection({ postId, initialComments, commentCount }: { postId: number, initialComments: any[], commentCount: number }) {
   const router = useRouter();
+  const supabase = createClient();
   const [currentUser, setCurrentUser] = useState<any>(null);
   
   const [mainContent, setMainContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -73,6 +72,26 @@ export default function CommentSection({ postId, initialComments, commentCount }
     }
   };
 
+
+  // 🌟 댓글 수정 모드 켜기
+  const handleEditClick = (commentId: number, currentContent: string) => {
+    setEditingCommentId(commentId);
+    setEditContent(currentContent);
+    setReplyingTo(null); // 수정 중일 땐 답글 창 닫기
+  };
+
+  // 🌟 댓글 수정 완료
+  const handleUpdate = async (commentId: number) => {
+    if (!editContent.trim()) return;
+    const { error } = await supabase.from("community_comments").update({ content: editContent }).eq("id", commentId);
+    if (!error) {
+      setEditingCommentId(null);
+      router.refresh();
+    } else {
+      alert("수정 실패: " + error.message);
+    }
+  };
+
  // 🌟 확실하게 부모와 자식 댓글을 동반 삭제하도록 수정한 함수
   const handleDelete = async (commentId: number) => {
     if (!confirm("정말로 이 댓글을 삭제하시겠습니까? (달려있는 답글도 함께 삭제됩니다.)")) return;
@@ -114,14 +133,29 @@ export default function CommentSection({ postId, initialComments, commentCount }
                 <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} style={{ background: "none", border: "none", color: "#888", fontSize: "12px", cursor: "pointer", padding: 0 }}>
                   {replyingTo === comment.id ? "취소" : "답글달기"}
                 </button>
-                {currentUser && (currentUser.nickname === comment.author || currentUser.isAdmin) && (
-                  <button onClick={() => handleDelete(comment.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>
-                    삭제
-                  </button>
+{currentUser && (currentUser.nickname === comment.author || currentUser.isAdmin) && (
+                  <>
+                    <button onClick={() => handleEditClick(comment.id, comment.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
+                    <button onClick={() => handleDelete(comment.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
+                  </>
                 )}
               </div>
             </div>
-            <div style={{ fontSize: "14px", lineHeight: 1.6, color: "#222" }}>{comment.content}</div>
+            {editingCommentId === comment.id ? (
+              <div style={{ marginTop: "10px" }}>
+                <textarea 
+                  value={editContent} 
+                  onChange={(e) => setEditContent(e.target.value)} 
+                  style={{ width: "100%", height: "60px", padding: "10px", fontSize: "14px", border: "1px solid #ddd", borderRadius: "4px", resize: "none", marginBottom: "8px" }}
+                />
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "5px" }}>
+                  <button onClick={() => handleUpdate(comment.id)} style={{ padding: "4px 12px", backgroundColor: "#4CAF50", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>저장</button>
+                  <button onClick={() => setEditingCommentId(null)} style={{ padding: "4px 12px", backgroundColor: "#999", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>취소</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: "14px", lineHeight: 1.6, color: "#222", wordBreak: "break-word" }}>{comment.content}</div>
+            )}
 
             {getReplies(comment.id).map(reply => (
               <div key={reply.id} style={{ background: "#f8f9fa", padding: "12px 15px", borderRadius: "6px", marginTop: "10px", marginLeft: "20px", position: "relative" }}>
@@ -131,11 +165,12 @@ export default function CommentSection({ postId, initialComments, commentCount }
                     <span style={{ fontSize: "13px", fontWeight: "bold" }}>{reply.author === "주인장" ? "⚙️" : "👤"} {reply.author}</span>
                     <span style={{ fontSize: "11px", color: "#888" }}>{formatDate(reply.created_at)}</span>
                   </div>
-                  {currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
-                    <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "11px", cursor: "pointer", padding: 0 }}>
-                      삭제
-                    </button>
-                  )}
+{currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
+                  <>
+                    <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
+                    <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
+                  </>
+                )}
                 </div>
                 <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
               </div>

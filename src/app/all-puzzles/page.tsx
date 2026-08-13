@@ -29,7 +29,7 @@ export default async function AllPuzzlesPage() {
   }
 
   // 2. 퍼즐 데이터 가져오기 (관리자면 전부, 일반 유저면 승인된 것만)
-  let query = supabase.from("puzzles").select("*").order("created_at", { ascending: false });
+ let query = supabase.from("puzzles").select("*, comments:puzzle_comments(count), likes:puzzle_likes(count)").order("created_at", { ascending: false });
   if (!isAdminMode) {
     query = query.eq("is_approved", true);
   }
