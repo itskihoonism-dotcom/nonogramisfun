@@ -159,7 +159,7 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
 
             return (
               <li key={p.id} style={{ display: "flex", alignItems: "center" }}>
-                <Link href={`/play-puzzle?id=${p.id}`} className="post-row-link" style={{ flex: 1 }}>
+                <Link href={`/puzzle/${encodeURIComponent(p.slug)}`} className="post-row-link" style={{ flex: 1 }}>
                   
                   {/* 🌟 수정된 번호 열 */}
                   <div className="col-badge" style={{ color: "#888", fontSize: "13px", fontWeight: "bold" }}>

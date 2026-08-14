@@ -92,16 +92,14 @@ body { background-color: #f5f6f7; color: #333; display: flex; flex-direction: co
   .ad-mobile { display: block; }
 }
 
-/* 🌟 전체화면 내부의 퍼즐 요소가 자연스럽게 중앙에 오도록 설정 */
-/* #drag-count-tooltip은 제외: 이 규칙이 없으면 드래그 툴팁의 인라인 display:none이
-   !important로 덮어써져서, 전체화면에서 클릭을 떼도 툴팁이 사라지지 않고
-   다음 클릭 위치로만 옮겨 다니는 버그가 발생합니다. */
-:fullscreen > div:not(#drag-count-tooltip), :-webkit-full-screen > div:not(#drag-count-tooltip) {
-  display: inline-block !important;
-  margin: 0 auto !important;
-  text-align: left !important;
+/* 🌟 전체화면 모드일 때 퍼즐 잘림 방지 (Flex 대신 Block 사용!) */
+:fullscreen, :-webkit-full-screen {
+  background-color: #f5f6f7;
+  overflow: auto !important; /* 스크롤바 생성 */
+  display: block !important; /* 🌟 핵심: flex가 아닌 block을 써야 위쪽이 안 잘립니다! */
+  text-align: center !important; /* 가로 가운데 정렬 */
+  padding: 40px 20px !important;
 }
-
 
 /* 🌟 전체화면 내부의 퍼즐 요소가 자연스럽게 중앙에 오도록 설정 */
 :fullscreen > div:not(#drag-count-tooltip), :-webkit-full-screen > div:not(#drag-count-tooltip) {

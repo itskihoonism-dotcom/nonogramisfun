@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from 'next/link';
 
 export default function Footer() {
   // 🌟 모달창 상태 관리 ('privacy', 'terms', 'contact', null)
@@ -22,8 +23,8 @@ export default function Footer() {
       <style>{`
         .site-footer { background-color: #222; color: #aaa; padding: 25px 0; text-align: center; font-size: 13px; margin-top: auto; }
         .footer-links { margin-bottom: 15px; }
-        .footer-links button { background: none; border: none; color: #ddd; text-decoration: none; margin: 0 15px; cursor: pointer; font-weight: 500; font-size: 13px; transition: color 0.2s; padding: 0; }
-        .footer-links button:hover { color: #2196F3; text-decoration: underline; }
+        .footer-links a, .footer-links button { background: none; border: none; color: #ddd; text-decoration: none; margin: 0 15px; cursor: pointer; font-weight: 500; font-size: 13px; transition: color 0.2s; padding: 0; display: inline-block; }
+        .footer-links a:hover, .footer-links button:hover { color: #2196F3; text-decoration: underline; }
         .footer-copyright { color: #777; }
 
         .ft-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; z-index: 3000; }
@@ -35,11 +36,11 @@ export default function Footer() {
         .ft-close-btn:hover { background: #111; }
       `}</style>
 
-      {/* 🌟 Footer 본체 */}
+{/* 🌟 Footer 본체 */}
       <footer className="site-footer">
         <div className="footer-links">
-          <button onClick={() => openModal('privacy')}>개인정보처리방침</button> |
-          <button onClick={() => openModal('terms')}>이용약관</button> |
+          <Link href="/terms">이용약관</Link> |
+          <Link href="/privacy">개인정보처리방침</Link> |
           <button onClick={() => openModal('contact')}>문의하기</button>
         </div>
         <div className="footer-copyright">

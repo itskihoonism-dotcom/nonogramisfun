@@ -342,10 +342,6 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           background: transparent !important;
           display: block !important;
         }
-          #play-area:fullscreen .toolbar-bar, #play-area:-webkit-full-screen .toolbar-bar {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-}
 
         .drag-tooltip {
           position: fixed;
@@ -373,24 +369,21 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
       {/* 🌟 툴팁 코드를 다시 내부로 복구했습니다 */}
       <div id="drag-count-tooltip" ref={tooltipRef} className="drag-tooltip">1</div>
       
-      {/* 🌟 어떠한 상황(전체화면 등)에서도 절대 줄바꿈 되지 않도록(width: max-content) 튼튼하게 묶었습니다 */}
-     <div className="toolbar-bar" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px", marginBottom: "15px" }}>
-        {/* 1. 줌 & 전체화면 버튼 */}
-        <span style={{ fontSize: "14px", fontWeight: "bold", marginRight: "4px" }}>🔎 줌:</span>
-        <button onClick={() => setZoomFactor(z => Math.min(3.0, z + 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>+</button>
-        <button onClick={() => setZoomFactor(z => Math.max(0.2, z - 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>-</button>
-        <button onClick={() => setZoomFactor(1.0)} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>기본</button>
-        <button onClick={toggleFullScreen} style={{ marginLeft: "4px", padding: "4px 10px", fontWeight: "bold", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>⛶ 전체화면</button>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px", marginBottom: "15px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #ddd" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold" }}>🔎 줌: </span>
+          <button onClick={() => setZoomFactor(z => Math.min(3.0, z + 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>+</button>
+          <button onClick={() => setZoomFactor(z => Math.max(0.2, z - 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>-</button>
+          <button onClick={() => setZoomFactor(1.0)} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>기본</button>
+          <button onClick={toggleFullScreen} style={{ marginLeft: "10px", padding: "4px 10px", fontWeight: "bold", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>⛶ 전체화면</button>
+        </div>
 
-        {/* 2. 구분선 (버튼들 사이를 깔끔하게 나눠줍니다) */}
-        <div style={{ width: "2px", height: "20px", backgroundColor: "#eee", margin: "0 5px" }}></div>
-
-        {/* 3. 취소, 다시, 임시저장, 불러오기 버튼 */}
-        <button onClick={undo} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", padding: "6px 12px", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↩ 취소</button>
-        <button onClick={redo} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", padding: "6px 12px", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↪ 다시</button>
-        <button onClick={saveProgress} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", padding: "6px 12px", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#FF9800" }}>💾 임시저장</button>
-        <button onClick={loadProgress} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", padding: "6px 12px", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#9C27B0" }}>📂 불러오기</button>
-        
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px" }}>
+          <button onClick={undo} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↩ 취소</button>
+          <button onClick={redo} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↪ 다시</button>
+          <button onClick={saveProgress} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#FF9800" }}>💾 임시저장</button>
+          <button onClick={loadProgress} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#9C27B0" }}>📂 불러오기</button>
+        </div>
       </div>
 
       <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }} onTouchMove={handleTouchMove}>
@@ -469,10 +462,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
 
-      {/* 🌟 전체화면이 아닐 때(!isFullscreen)만 댓글과 추천/비추천 영역을 보여줍니다 */}
-      {!isFullscreen && (
-        <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
-      )}
+      <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
 
       
 
