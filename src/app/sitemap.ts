@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/terms`, priority: 0.3 },
     ...(puzzles ?? []).map((p) => ({
       url: `${SITE_URL}/puzzle/${encodeURIComponent(p.slug)}`,
-      lastModified: p.created_at,
+      lastModified: new Date(p.created_at + "Z"),
       priority: 0.7,
       changeFrequency: "monthly" as const,
     })),
