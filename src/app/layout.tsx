@@ -8,6 +8,9 @@ import Script from "next/script";
 export const metadata = {
   title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
   description: "노노그램(네모로직)은 간단한 규칙과 도전적인 풀이로 두뇌를 자극하는 무료 논리 퍼즐입니다. 나만의 퍼즐을 만들고 공유해보세요.",
+  icons: {
+    icon: '/favicon.png', 
+  },
   other: {
     "google-adsense-account": "ca-pub-4631511581907983",
   },

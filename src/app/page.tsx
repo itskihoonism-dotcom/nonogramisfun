@@ -26,7 +26,7 @@ export default async function HomePage() {
     supabase
       .from('puzzles')
       // 👇 다시 'id'를 불러오도록 부활시켰습니다!
-      .select('id, title, width, height, created_at, author, views')
+      .select('id, title, width, height, created_at, author, views, slug')
       .eq('is_approved', true)
       .order('created_at', { ascending: false })
       .limit(6),
@@ -75,7 +75,7 @@ export default async function HomePage() {
                 // 👇 key를 p.id로 변경
                 <li key={p.id} style={{ background: "#fff", marginBottom: "8px", padding: 0, borderRadius: "6px", display: "flex", border: "1px solid #e0e0e0", transition: "background 0.2s" }}>
                   {/* 👇 링크 주소를 ?title=... 에서 ?id=... 로 변경! */}
-                  <Link href={`/play-puzzle?id=${p.id}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0 }}>
+                  <Link href={`/puzzle/${encodeURIComponent(p.slug)}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0 }}>
                     <div className="puzzle-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", minWidth: 0, flex: 1, paddingRight: "10px" }}>
                       <span className="puzzle-title" style={{ fontSize: "14px", fontWeight: "bold", color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {isNew(p.created_at) && <span style={{ backgroundColor: "#ff5722", color: "white", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "3px", marginRight: "6px", verticalAlign: "middle" }}>N</span>}

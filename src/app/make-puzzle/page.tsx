@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
 import KakaoAd from "../../components/KakaoAd";
+import { makeSlug } from "@/lib/slug";
 
 
 
@@ -243,7 +244,6 @@ export default function MakePuzzlePage() {
 
     let title = prompt("퍼즐의 이름을 입력하세요:", "새 퍼즐");
     if (!title) return;
-
     let finalTitle = title;
     const { data: existingPuzzle } = await supabase.from('puzzles').select('title').eq('title', title).maybeSingle();
     
@@ -253,15 +253,33 @@ export default function MakePuzzlePage() {
       alert(`💡 이미 같은 이름이 있어서 '${finalTitle}'(으)로 자동 변경되어 저장됩니다.`);
     }
 
-    const { error } = await supabase.from('puzzles').insert([{ 
-        title: finalTitle, 
-        data: userGrid, 
-        width: currentWidth, 
-        height: currentHeight, 
-        is_approved: currentUser.isAdmin, 
-        views: 0,
-        author: currentUser.nickname 
-    }]);
+    // 🌟 slug 생성 (중복 시 -2, -3 붙여 재시도)
+    const baseSlug = makeSlug(finalTitle, currentWidth, currentHeight, crypto.randomUUID());
+    let slug = baseSlug;
+    let attempt = 2;
+    let error = null;
+
+    while (true) {
+      const res = await supabase.from('puzzles').insert([{ 
+          title: finalTitle, 
+          data: userGrid, 
+          width: currentWidth, 
+          height: currentHeight, 
+          is_approved: currentUser.isAdmin, 
+          views: 0,
+          author: currentUser.nickname,
+          slug
+      }]);
+
+      // 유니크 제약 위반이면 번호를 올려 재시도
+      if (res.error?.code === '23505' && attempt <= 20) {
+        slug = `${baseSlug}-${attempt++}`;
+        continue;
+      }
+
+      error = res.error;
+      break;
+    }
 
     if (error) {
       alert("저장 실패: " + error.message);
