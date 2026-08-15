@@ -21,6 +21,9 @@ export default function Sidebar({
   const [showSignup, setShowSignup] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
 
+  // 🌟 모바일 햄버거 메뉴(드로어) 상태
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   // 폼 입력 상태
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
@@ -125,8 +128,64 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className="sidebar" style={{ width: "300px", display: "flex", flexDirection: "column", gap: "15px", flexShrink: 0 }}>
-        <style>{`@media (max-width: 850px) { .sidebar { display: none !important; } }`}</style>
+      {/* 🌟 모바일 햄버거 버튼 (헤더 로고 오른쪽에 겹쳐 보이도록 고정 위치) */}
+      <button
+        type="button"
+        className="mobile-menu-btn"
+        aria-label="메뉴 열기"
+        onClick={() => setDrawerOpen(true)}
+        style={{ position: "fixed", top: 0, left: "136px", height: "60px", width: "40px", background: "transparent", border: "none", color: "#fff", fontSize: "26px", cursor: "pointer", zIndex: 1100, alignItems: "center", justifyContent: "center" }}
+      >
+        ☰
+      </button>
+
+      {/* 🌟 드로어 배경 오버레이 */}
+      {drawerOpen && (
+        <div
+          onClick={() => setDrawerOpen(false)}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", zIndex: 1400 }}
+        />
+      )}
+
+      <aside className={`sidebar${drawerOpen ? " sidebar-mobile-open" : ""}`} style={{ width: "300px", display: "flex", flexDirection: "column", gap: "15px", flexShrink: 0 }}>
+        <style>{`
+          @media (max-width: 850px) {
+            .sidebar {
+              display: flex !important;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 80%;
+              max-width: 300px;
+              height: 100vh;
+              background: #f5f6f7;
+              z-index: 1500;
+              padding: 20px;
+              box-sizing: border-box;
+              overflow-y: auto;
+              margin: 0;
+              transform: translateX(-105%);
+              transition: transform 0.25s ease;
+              box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+            }
+            .sidebar.sidebar-mobile-open { transform: translateX(0); }
+            .mobile-menu-btn { display: flex; }
+            .sidebar-mobile-nav { display: flex !important; }
+          }
+          @media (min-width: 851px) {
+            .mobile-menu-btn { display: none; }
+          }
+        `}</style>
+
+        {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
+        <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
+          <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
+            🧩 창작노노그램
+          </Link>
+          <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
+            💬 커뮤니티
+          </Link>
+        </nav>
 
         {/* 내 정보 / 로그인 위젯 */}
         <div className="sidebar-widget" style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "20px" }}>
@@ -168,7 +227,7 @@ export default function Sidebar({
           
           {/* 🌟 1. 제목 클릭 시 /notice 페이지로 이동 + '더보기' 텍스트 추가 */}
           <h3 style={{ margin: "0 0 15px 0", fontSize: "16px", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
-            <Link href="/notice" style={{ textDecoration: "none", color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Link href="/notice" onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>공지사항</span>
               <span style={{ fontSize: "12px", color: "#888", fontWeight: "normal" }}>더보기 ❯</span>
             </Link>
@@ -182,7 +241,7 @@ export default function Sidebar({
                 <li key={n.id} style={{ padding: "6px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}>
                   
                   {/* 🌟 2. 개별 글 클릭 시 /notice 페이지의 해당 글(아코디언)이 열리도록 파라미터 전달 */}
-                  <Link href={`/notice?id=${n.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
+                  <Link href={`/notice?id=${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
                     <span>📢</span>
                     <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", width: "85%" }}>
                       {n.title}
