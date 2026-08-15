@@ -1,8 +1,8 @@
 import "./globals.css";
-import Link from "next/link";
 import Sidebar from "../components/Sidebar";
 import { createClient } from "../lib/supabaseServer";
-import Footer from "../components/Footer"; 
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 import Script from "next/script";
 
 export const metadata = {
@@ -79,34 +79,13 @@ export default async function RootLayout({
         />
 
         
-        {/* 상단 헤더 */}
-        <header className="site-header" style={{ backgroundColor: "#222", color: "#fff", width: "100%", position: "sticky", top: 0, zIndex: 1000, boxShadow: "0 2px 5px rgba(0,0,0,0.2)" }}>
-          <div className="header-inner" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", padding: "0 20px", height: "100px" }}>
-            <Link href="/">
-  <img 
-    src="/logo.webp" 
-    alt="로고" 
-    className="header-logo" 
-    width={150} 
-    height={75} 
-    style={{ cursor: "pointer", borderRadius: "10px", marginRight: "30px", objectFit: "contain" }}
-  />
-</Link>
-            <nav className="header-nav" style={{ display: "flex", gap: "20px" }}>
-              <Link href="/all-puzzles" style={{ color: "#fff", textDecoration: "none", fontSize: "15px", fontWeight: "bold", padding: "40px 0", transition: "all 0.2s" }}>
-                창작노노그램
-              </Link>
-              <Link href="/community" style={{ color: "#fff", textDecoration: "none", fontSize: "15px", fontWeight: "bold", padding: "40px 0", transition: "all 0.2s" }}>
-                커뮤니티
-              </Link>
-            </nav>
-          </div>
-        </header>
+                {/* 상단 헤더 */}
+        <Header />
 
         {/* 본문 + 사이드바 컨테이너 */}
-        <div className="layout-container" style={{ maxWidth: "1200px", margin: "20px auto", display: "flex", gap: "20px", padding: "0 20px", flex: 1, width: "100%", boxSizing: "border-box" }}>
-          
-          <main className="main-content" style={{ flex: 1, background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "30px", overflow: "hidden", minWidth: 0 }}>
+        <div className="layout-container">
+
+          <main className="main-content">
             {children}
           </main>
 

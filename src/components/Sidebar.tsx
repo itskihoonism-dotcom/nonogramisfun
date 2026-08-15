@@ -134,7 +134,7 @@ export default function Sidebar({
         className="mobile-menu-btn"
         aria-label="메뉴 열기"
         onClick={() => setDrawerOpen(true)}
-        style={{ position: "fixed", top: 0, left: "136px", height: "60px", width: "40px", background: "transparent", border: "none", color: "#fff", fontSize: "26px", cursor: "pointer", zIndex: 1100, alignItems: "center", justifyContent: "center" }}
+        style={{ position: "fixed", top: 0, left: "350px", height: "70px", width: "40px", background: "transparent", border: "none", color: "#fff", fontSize: "26px", cursor: "pointer", zIndex: 1100, alignItems: "center", justifyContent: "center" }}
       >
         ☰
       </button>
@@ -180,10 +180,10 @@ export default function Sidebar({
         {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
         <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
           <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
-            🧩 창작노노그램
+             창작노노그램
           </Link>
           <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
-            💬 커뮤니티
+             커뮤니티
           </Link>
         </nav>
 

@@ -335,6 +335,9 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         #play-area:fullscreen .seo-guide-box, #play-area:-webkit-full-screen .seo-guide-box {
           display: none !important;
         }
+        #play-area:fullscreen .puzzle-comments-box, #play-area:-webkit-full-screen .puzzle-comments-box {
+          display: none !important;
+        }
         #play-area:fullscreen .scroll-wrapper, #play-area:-webkit-full-screen .scroll-wrapper {
           max-height: none !important;
           max-width: 100vw !important;

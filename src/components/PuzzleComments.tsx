@@ -157,7 +157,7 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
   const canDelete = isAdmin || (puzzle.author === authorName);
 
   return (
-    <div style={{ marginTop: "40px" }}>
+    <div className="puzzle-comments-box" style={{ marginTop: "40px" }}>
       
       {/* 🌟 추천 / 비추천 / 삭제 버튼 행 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
