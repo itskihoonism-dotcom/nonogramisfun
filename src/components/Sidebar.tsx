@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
+import { useMobileMenu } from "./MobileMenuContext";
 
 export default function Sidebar({
   initialUser,
@@ -22,7 +23,7 @@ export default function Sidebar({
   const [showResetPw, setShowResetPw] = useState(false);
 
   // 🌟 모바일 햄버거 메뉴(드로어) 상태
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { open: drawerOpen, setOpen: setDrawerOpen } = useMobileMenu();
 
   // 폼 입력 상태
   const [loginId, setLoginId] = useState("");
@@ -128,17 +129,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 🌟 모바일 햄버거 버튼 (헤더 로고 오른쪽에 겹쳐 보이도록 고정 위치) */}
-      <button
-        type="button"
-        className="mobile-menu-btn"
-        aria-label="메뉴 열기"
-        onClick={() => setDrawerOpen(true)}
-        style={{ position: "fixed", top: 0, left: "350px", height: "70px", width: "40px", background: "transparent", border: "none", color: "#fff", fontSize: "26px", cursor: "pointer", zIndex: 1100, alignItems: "center", justifyContent: "center" }}
-      >
-        ☰
-      </button>
-
       {/* 🌟 드로어 배경 오버레이 */}
       {drawerOpen && (
         <div
@@ -168,12 +158,8 @@ export default function Sidebar({
               transition: transform 0.25s ease;
               box-shadow: 2px 0 12px rgba(0,0,0,0.25);
             }
-            .sidebar.sidebar-mobile-open { transform: translateX(0); }
-            .mobile-menu-btn { display: flex; }
+               .sidebar.sidebar-mobile-open { transform: translateX(0); }
             .sidebar-mobile-nav { display: flex !important; }
-          }
-          @media (min-width: 851px) {
-            .mobile-menu-btn { display: none; }
           }
         `}</style>
 

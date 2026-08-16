@@ -4,6 +4,7 @@ import { createClient } from "../lib/supabaseServer";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Script from "next/script";
+import { MobileMenuProvider } from "../components/MobileMenuContext";
 
 export const metadata = {
   title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
@@ -79,20 +80,22 @@ export default async function RootLayout({
         />
 
         
-                {/* 상단 헤더 */}
-        <Header />
+          <MobileMenuProvider>
+          {/* 상단 헤더 */}
+          <Header />
 
-        {/* 본문 + 사이드바 컨테이너 */}
-        <div className="layout-container">
+          {/* 본문 + 사이드바 컨테이너 */}
+          <div className="layout-container">
 
-          <main className="main-content">
-            {children}
-          </main>
+            <main className="main-content">
+              {children}
+            </main>
 
-          {/* 🌟 서버에서 완성된 유저/공지 데이터를 사이드바에 즉시 전달! */}
-          <Sidebar initialUser={initialUser} initialNotices={initialNotices} />
+            {/* 🌟 서버에서 완성된 유저/공지 데이터를 사이드바에 즉시 전달! */}
+            <Sidebar initialUser={initialUser} initialNotices={initialNotices} />
 
-        </div>
+          </div>
+        </MobileMenuProvider>
         <Footer />
 
       </body>
