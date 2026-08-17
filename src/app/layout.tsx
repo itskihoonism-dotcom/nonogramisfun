@@ -33,11 +33,29 @@ export default async function RootLayout({
   let initialUser = null;
 
   if (user && user.email) {
-    const { data: userData } = await supabase
+    let { data: userData } = await supabase
       .from("user_ids")
       .select("nickname, points, custom_id")
       .eq("email", user.email)
       .maybeSingle();
+
+    // 🌟 소셜 로그인(구글/카카오)으로 처음 로그인한 유저는 user_ids에 없으므로 자동 생성
+    if (!userData) {
+      const socialNickname =
+        user.user_metadata?.nickname ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email.split("@")[0];
+      const generatedCustomId = `social_${user.id.slice(0, 8)}`;
+
+      const { data: inserted } = await supabase
+        .from("user_ids")
+        .insert({ custom_id: generatedCustomId, email: user.email, nickname: socialNickname, points: 0 })
+        .select("nickname, points, custom_id")
+        .maybeSingle();
+
+      userData = inserted;
+    }
 
     const displayNickname = userData?.nickname || user.user_metadata?.nickname || "익명";
     const isAdmin = displayNickname === "주인장" || userData?.custom_id === "admin";

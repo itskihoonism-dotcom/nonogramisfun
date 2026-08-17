@@ -81,6 +81,26 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
     fetchCompletedPuzzles();
   }, [supabase]);
 
+  // 🌟 관리자 전용: 퍼즐 승인 처리
+  const handleApprove = async (id: number, title: string) => {
+    if (!confirm(`'${title}' 퍼즐을 승인하시겠습니까?`)) return;
+    const { error } = await supabase.from("puzzles").update({ is_approved: true }).eq("id", id);
+    if (error) return alert("승인 실패: " + error.message);
+    alert("승인되었습니다.");
+    setPuzzles(prev => prev.map(p => (p.id === id ? { ...p, is_approved: true } : p)));
+    setPreviewPuzzle((prev: any) => (prev ? { ...prev, is_approved: true } : prev));
+  };
+
+    // 🌟 관리자 전용: 퍼즐 삭제 처리
+  const handleDeletePuzzle = async (id: number, title: string) => {
+    if (!confirm(`'${title}' 퍼즐을 삭제하시겠습니까?\n삭제된 퍼즐은 복구할 수 없습니다.`)) return;
+    const { error } = await supabase.from("puzzles").delete().eq("id", id);
+    if (error) return alert("삭제 실패: " + error.message);
+    alert("퍼즐이 삭제되었습니다.");
+    setPuzzles(prev => prev.filter(p => p.id !== id));
+    setPreviewPuzzle(null);
+  };
+  
   // 🌟 팝업창 안에서 렌더링될 미리보기 캔버스 (크기 조절 가능하도록 수정)
   const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, height: number, data: number[], maxSize?: number }) => {
     if (!data || data.length === 0) return null;
@@ -246,9 +266,27 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
             style={{ backgroundColor: "#fff", padding: "25px", borderRadius: "8px", maxWidth: "90vw", maxHeight: "90vh", overflow: "auto", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}
             onClick={(e) => e.stopPropagation()} // 내부 클릭 시 닫힘 방지
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd", paddingBottom: "10px", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd", paddingBottom: "10px", marginBottom: "20px" }}>
               <h3 style={{ margin: 0, color: "#333", fontSize: "18px" }}>🔎 {previewPuzzle.title} ({previewPuzzle.width}x{previewPuzzle.height})</h3>
-              <button onClick={() => setPreviewPuzzle(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999", padding: "0 5px" }}>×</button>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {isAdmin && !previewPuzzle.is_approved && (
+                  <button
+                    onClick={() => handleApprove(previewPuzzle.id, previewPuzzle.title)}
+                    style={{ background: "#4CAF50", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 12px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    ✅ 승인하기
+                  </button>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDeletePuzzle(previewPuzzle.id, previewPuzzle.title)}
+                    style={{ background: "#f44336", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 12px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    🗑️ 삭제하기
+                  </button>
+                )}
+                <button onClick={() => setPreviewPuzzle(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999", padding: "0 5px" }}>×</button>
+              </div>
             </div>
             
             <div style={{ display: "flex", justifyContent: "center" }}>

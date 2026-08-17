@@ -18,7 +18,6 @@ const getPuzzle = cache(async (slug: string) => {
     .from("puzzles")
     .select("*")
     .eq("slug", decodeURIComponent(slug))
-    .eq("is_approved", true)
     .single();
   return data;
 });
@@ -74,8 +73,24 @@ export default async function PuzzlePage({
 
   if (!puzzle) notFound();
 
-  // 조회수 +1 (id 기준)
   const supabase = await createClient();
+
+  // 🌟 미승인 퍼즐은 관리자(주인장)만 볼 수 있음
+  if (!puzzle.is_approved) {
+    const { data: { user } } = await supabase.auth.getUser();
+    let isAdmin = false;
+    if (user?.email) {
+      const { data: userData } = await supabase
+        .from("user_ids")
+        .select("nickname, custom_id")
+        .eq("email", user.email)
+        .maybeSingle();
+      isAdmin = userData?.nickname === "주인장" || userData?.custom_id === "admin";
+    }
+    if (!isAdmin) notFound();
+  }
+
+  // 조회수 +1 (id 기준)
   await supabase
     .from("puzzles")
     .update({ views: (puzzle.views || 0) + 1 })

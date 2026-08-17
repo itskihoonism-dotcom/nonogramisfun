@@ -22,6 +22,15 @@ export default function Sidebar({
   const [showSignup, setShowSignup] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
 
+    // 🌟 내 정보 확인 팝업
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [userDetail, setUserDetail] = useState<{ custom_id: string; email: string } | null>(null);
+  const [editNickname, setEditNickname] = useState("");
+  const [nicknameEditCheck, setNicknameEditCheck] = useState({ checked: false, msg: "", color: "" });
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [completedPuzzles, setCompletedPuzzles] = useState<any[]>([]);
+
   // 🌟 모바일 햄버거 메뉴(드로어) 상태
   const { open: drawerOpen, setOpen: setDrawerOpen } = useMobileMenu();
 
@@ -61,6 +70,15 @@ export default function Sidebar({
     } catch (err: any) {
       alert("로그인 에러: " + err.message);
     }
+  };
+
+  // 소셜 로그인 (구글 / 카카오)
+  const handleSocialLogin = async (provider: "google" | "kakao") => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) alert("소셜 로그인 실패: " + error.message);
   };
 
   // 로그아웃
@@ -122,6 +140,61 @@ export default function Sidebar({
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: "https://nonogramisfun.com" });
     if (error) alert("발송 실패: " + error.message);
     else { alert("비밀번호 재설정 메일이 발송되었습니다!"); setShowResetPw(false); setResetEmail(""); }
+  };
+
+    // 🌟 내 정보 팝업 열기 - 상세 정보 불러오기
+  const openInfoModal = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !user.email) return;
+
+    const { data: userData } = await supabase
+      .from("user_ids")
+      .select("custom_id, nickname")
+      .eq("email", user.email)
+      .maybeSingle();
+
+    setUserDetail({ custom_id: userData?.custom_id || "-", email: user.email });
+    setEditNickname(userData?.nickname || userInfo?.nickname || "");
+    setNicknameEditCheck({ checked: false, msg: "", color: "" });
+    setNewPassword("");
+    setNewPasswordConfirm("");
+
+    const { data: completed } = await supabase
+      .from("completed_puzzles")
+      .select("puzzle_id, puzzles(title, slug, width, height)")
+      .eq("user_id", user.id)
+      .order("id", { ascending: false });
+
+    setCompletedPuzzles(completed || []);
+    setShowInfoModal(true);
+  };
+
+  const handleCheckEditNick = async () => {
+    if (!editNickname) return setNicknameEditCheck({ checked: false, msg: "닉네임을 입력해주세요.", color: "#ff4d4d" });
+    if (editNickname === userInfo?.nickname) return setNicknameEditCheck({ checked: true, msg: "현재 닉네임과 동일합니다.", color: "#4CAF50" });
+    const { data } = await supabase.from("user_ids").select("nickname").eq("nickname", editNickname).maybeSingle();
+    if (data) setNicknameEditCheck({ checked: false, msg: "이미 사용 중인 닉네임입니다.", color: "#ff4d4d" });
+    else setNicknameEditCheck({ checked: true, msg: "사용 가능한 닉네임입니다.", color: "#4CAF50" });
+  };
+
+  const handleSaveNickname = async () => {
+    if (editNickname !== userInfo?.nickname && !nicknameEditCheck.checked) {
+      return alert("닉네임 중복확인을 먼저 진행해주세요.");
+    }
+    const { error } = await supabase.from("user_ids").update({ nickname: editNickname }).eq("email", userDetail?.email);
+    if (error) return alert("닉네임 변경 실패: " + error.message);
+    alert("닉네임이 변경되었습니다!");
+    window.location.reload();
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) return alert("비밀번호는 최소 6자 이상이어야 합니다.");
+    if (newPassword !== newPasswordConfirm) return alert("비밀번호가 일치하지 않습니다.");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return alert("비밀번호 변경 실패: " + error.message);
+    alert("비밀번호가 변경되었습니다!");
+    setNewPassword("");
+    setNewPasswordConfirm("");
   };
 
   const inputStyle = { fontSize: "16px", width: "100%", boxSizing: "border-box" as const, padding: "10px", marginBottom: "8px", border: "1px solid #ddd", borderRadius: "4px", background: "#f9f9f9" };
@@ -187,10 +260,32 @@ export default function Sidebar({
                 <button style={{ ...btnStyle, backgroundColor: "#333" }} onClick={handleLogin}>로그인</button>
                 <button style={{ ...btnStyle, backgroundColor: "#2196F3" }} onClick={() => setShowSignup(true)}>회원가입</button>
               </div>
-              <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
+                            <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
                 <a href="#" onClick={(e) => { e.preventDefault(); handleFindId(); }} style={{ color: "#666", textDecoration: "none" }}>아이디 찾기</a>
                 <span style={{ color: "#ccc", margin: "0 8px" }}>|</span>
                 <a href="#" onClick={(e) => { e.preventDefault(); setShowResetPw(true); }} style={{ color: "#666", textDecoration: "none" }}>비밀번호 찾기</a>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", margin: "16px 0", gap: "8px" }}>
+                <div style={{ flex: 1, height: "1px", background: "#eee" }} />
+                <span style={{ fontSize: "12px", color: "#999" }}>또는</span>
+                <div style={{ flex: 1, height: "1px", background: "#eee" }} />
+              </div>
+
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "stretch", gap: "8px" }}>
+                <button
+                  onClick={() => handleSocialLogin("google")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flex: 1, padding: "0 6px", background: "#fff", color: "#333", border: "1px solid #ddd", borderRadius: "4px", fontWeight: "bold", fontSize: "12px", cursor: "pointer", boxSizing: "border-box" }}
+                >
+                  <img src="/google-icon.svg" alt="" width={16} height={16} />
+                  구글로 로그인
+                </button>
+                <button
+                  onClick={() => handleSocialLogin("kakao")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 0, border: "none", background: "none", cursor: "pointer", borderRadius: "4px" }}
+                >
+                  <img src="/kakao-login-button.png" alt="카카오로 로그인" style={{ width: "100%", height: "auto", display: "block" }} />
+                </button>
               </div>
             </div>
           ) : (
@@ -201,9 +296,14 @@ export default function Sidebar({
               <p style={{ fontSize: "14px", fontWeight: "bold", marginTop: 0, marginBottom: "15px", color: "#ff5722" }}>
                 🏆 내 포인트: {userInfo.points.toLocaleString()} P
               </p>
-              <button onClick={handleLogout} style={{ width: "100%", padding: "10px", backgroundColor: "#ff4d4d", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
-                로그아웃
-              </button>
+              <div style={{ display: "flex", gap: "5px" }}>
+                <button onClick={openInfoModal} style={{ flex: 1, padding: "10px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
+                  내 정보 확인
+                </button>
+                <button onClick={handleLogout} style={{ flex: 1, padding: "10px", backgroundColor: "#ff4d4d", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
+                  로그아웃
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -281,6 +381,63 @@ export default function Sidebar({
             <div style={{ display: "flex", gap: "5px" }}>
               <button style={{ ...btnStyle, backgroundColor: "#2196F3" }} onClick={handleResetEmail}>메일 발송</button>
               <button style={{ ...btnStyle, backgroundColor: "#999" }} onClick={() => setShowResetPw(false)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 내 정보 확인 팝업 */}
+      {showInfoModal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setShowInfoModal(false); }}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", padding: "20px", boxSizing: "border-box" }}
+        >
+          <div style={{ background: "white", padding: "25px", borderRadius: "8px", width: "380px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", borderBottom: "2px solid #333", paddingBottom: "10px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px" }}>내 정보</h3>
+              <button onClick={() => setShowInfoModal(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#999" }}>×</button>
+            </div>
+
+            <div style={{ fontSize: "13px", color: "#555", marginBottom: "15px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div><strong>아이디:</strong> {userDetail?.custom_id || "-"}</div>
+              <div><strong>이메일:</strong> {userDetail?.email || "-"}</div>
+              <div><strong>포인트:</strong> {userInfo?.points?.toLocaleString() || 0} P</div>
+            </div>
+
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "bold", color: "#333", display: "block", marginBottom: "6px" }}>닉네임 변경</label>
+              <div style={{ display: "flex", gap: "5px" }}>
+                <input type="text" style={{ ...inputStyle, flex: 1, marginBottom: 0 }} value={editNickname} onChange={(e) => { setEditNickname(e.target.value); setNicknameEditCheck({ checked: false, msg: "", color: "" }); }} />
+                <button style={{ padding: "10px 15px", backgroundColor: nicknameEditCheck.checked ? "#4CAF50" : "#555", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap", fontSize: "13px" }} onClick={handleCheckEditNick}>
+                  {nicknameEditCheck.checked ? "확인완료" : "중복확인"}
+                </button>
+              </div>
+              {nicknameEditCheck.msg && <div style={{ fontSize: "12px", marginTop: "4px", color: nicknameEditCheck.color }}>{nicknameEditCheck.msg}</div>}
+              <button style={{ ...btnStyle, backgroundColor: "#2196F3", width: "100%", marginTop: "8px" }} onClick={handleSaveNickname}>닉네임 저장</button>
+            </div>
+
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "bold", color: "#333", display: "block", marginBottom: "6px" }}>비밀번호 변경</label>
+              <input type="password" placeholder="새 비밀번호 (6자 이상)" style={inputStyle} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <input type="password" placeholder="새 비밀번호 확인" style={{ ...inputStyle, marginBottom: "8px" }} value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} />
+              <button style={{ ...btnStyle, backgroundColor: "#333", width: "100%" }} onClick={handleChangePassword}>비밀번호 변경</button>
+            </div>
+
+            <div>
+              <label style={{ fontSize: "13px", fontWeight: "bold", color: "#333", display: "block", marginBottom: "6px" }}>완료한 퍼즐 ({completedPuzzles.length})</label>
+              {completedPuzzles.length === 0 ? (
+                <div style={{ fontSize: "13px", color: "#999", textAlign: "center", padding: "10px 0" }}>아직 완료한 퍼즐이 없습니다.</div>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, maxHeight: "150px", overflowY: "auto" }}>
+                  {completedPuzzles.map((c: any, i: number) => (
+                    <li key={i} style={{ padding: "6px 0", borderBottom: "1px dashed #eee", fontSize: "13px" }}>
+                      <Link href={`/puzzle/${c.puzzles?.slug}`} onClick={() => setShowInfoModal(false)} style={{ color: "#2196F3", textDecoration: "none" }}>
+                        {c.puzzles?.title} ({c.puzzles?.width}x{c.puzzles?.height})
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
