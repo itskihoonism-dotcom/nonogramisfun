@@ -4,6 +4,7 @@ import VoteButtons from "../../../components/VoteButtons";
 import CommentSection from "../../../components/CommentSection";
 import PostActions from "../../../components/PostActions";
 import KakaoAd from "../../../components/KakaoAd";
+import ShareButton from "../../../components/ShareButton";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react"; // 
@@ -190,8 +191,11 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       )}
 
       <div className="read-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "15px 0" }}>
-        <VoteButtons postId={post.id} initialLikes={post.likes} initialDislikes={post.dislikes} />
-        
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <VoteButtons postId={post.id} initialLikes={post.likes} initialDislikes={post.dislikes} />
+          <ShareButton title={post.title} url={`${SITE_URL}/community/${post.id}`} />
+        </div>
+
         {/* 🌟 4. PostActions 컴포넌트에 권한(hasPermission)을 전달합니다! */}
         <PostActions postId={post.id} hasPermission={hasPermission} />
       </div>

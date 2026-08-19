@@ -1,3 +1,8 @@
+if (process.platform === "win32") {
+  require("win-ca");
+}
+
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

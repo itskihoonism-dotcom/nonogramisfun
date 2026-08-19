@@ -104,10 +104,10 @@ export default async function HomePage() {
               <li style={{ background: "#fff", marginBottom: "8px", padding: "15px", borderRadius: "6px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid #e0e0e0", color: "#999" }}>게시글이 없습니다.</li>
             ) : (
               cData.map(c => (
-                <li key={c.id} style={{ background: "#fff", marginBottom: "8px", padding: 0, borderRadius: "6px", display: "flex", border: "1px solid #e0e0e0", transition: "background 0.2s" }}>
-                  <Link href={`/community/${c.id}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0 }}>
-                    <div className="puzzle-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", minWidth: 0, flex: 1, paddingRight: "10px" }}>
-                      <span className="puzzle-title" style={{ fontSize: "13px", fontWeight: "bold", color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <li key={c.id} style={{ background: "#fff", marginBottom: "8px", padding: 0, borderRadius: "6px", display: "flex", border: "1px solid #e0e0e0", transition: "background 0.2s", width: "100%", boxSizing: "border-box", overflow: "hidden" }}>
+                  <Link href={`/community/${c.id}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+                    <div className="puzzle-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", minWidth: 0, width: "100%", flex: 1, paddingRight: "10px" }}>
+                      <span className="puzzle-title" style={{ display: "block", width: "100%", fontSize: "13px", fontWeight: "bold", color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         <span style={{ color: "#9c27b0", fontSize: "12px", marginRight: "4px" }}>[{c.category}]</span>
                         {c.title}
                         {c.comments > 0 && <span style={{ color: "#ff5722", fontWeight: "bold", fontSize: "12px", marginLeft: "4px" }}>[{c.comments}]</span>}

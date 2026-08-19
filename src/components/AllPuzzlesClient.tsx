@@ -191,34 +191,46 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
                   </div>
                   
                   {/* 제목, 댓글 수, 뱃지, 미리보기 버튼 */}
-                  <div className="col-title" style={{ display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    {!p.is_approved && <span style={{ background: "#f44336", color: "white", fontSize: "11px", padding: "1px 5px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>미승인</span>}
-                    {isNew(p.created_at) && <span style={{ backgroundColor: "#ff5722", color: "white", fontSize: "11px", fontWeight: "bold", padding: "1px 5px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>N</span>}
-                    {isCleared && <span style={{ backgroundColor: "#E8F5E9", color: "#4CAF50", fontSize: "11px", fontWeight: "bold", border: "1px solid #4CAF50", padding: "0 4px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>✅ 완료</span>}
+                  <div className="col-title" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", overflow: "hidden", width: "100%" }}>
+                      {!p.is_approved && <span style={{ background: "#f44336", color: "white", fontSize: "11px", padding: "1px 5px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>미승인</span>}
+                      {isNew(p.created_at) && <span style={{ backgroundColor: "#ff5722", color: "white", fontSize: "11px", fontWeight: "bold", padding: "1px 5px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>N</span>}
+                      {isCleared && <span style={{ backgroundColor: "#E8F5E9", color: "#4CAF50", fontSize: "11px", fontWeight: "bold", border: "1px solid #4CAF50", padding: "0 4px", borderRadius: "3px", marginRight: "5px", flexShrink: 0 }}>✅ 완료</span>}
 
-                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {p.title}
-                    </span>
-
-                    {/* 댓글 수 표시 [N] */}
-                    {commentCount > 0 && (
-                      <span style={{ color: "#e53935", fontWeight: "bold", fontSize: "14px", marginLeft: "6px", flexShrink: 0 }}>
-                        [{commentCount}]
+                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.title}
                       </span>
-                    )}
 
-                    {/* 🌟 관리자 전용 텍스트 미리보기 버튼 */}
-                    {isAdmin && (
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault(); // 페이지 이동 방지
-                          setPreviewPuzzle(p);
-                        }}
-                        style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", marginLeft: "8px", cursor: "pointer", textDecoration: "underline", flexShrink: 0, padding: 0 }}
-                      >
-                        (미리보기)
-                      </button>
-                    )}
+                      {/* 댓글 수 표시 [N] */}
+                      {commentCount > 0 && (
+                        <span style={{ color: "#e53935", fontWeight: "bold", fontSize: "14px", marginLeft: "6px", flexShrink: 0 }}>
+                          [{commentCount}]
+                        </span>
+                      )}
+
+                      {/* 🌟 관리자 전용 텍스트 미리보기 버튼 */}
+                      {isAdmin && (
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault(); // 페이지 이동 방지
+                            setPreviewPuzzle(p);
+                          }}
+                          style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", marginLeft: "8px", cursor: "pointer", textDecoration: "underline", flexShrink: 0, padding: 0 }}
+                        >
+                          (미리보기)
+                        </button>
+                      )}
+                    </div>
+                    {/* 🌟 모바일 전용: 작성자/날짜/조회/추천 압축 표시 */}
+                    <div className="post-meta-mobile">
+                      <span>{p.author === "주인장" ? "⚙️" : "👤"} {p.author || "익명"}</span>
+                      <span>·</span>
+                      <span>{formatDate(p.created_at)}</span>
+                      <span>·</span>
+                      <span>조회 {p.views || 0}</span>
+                      <span>·</span>
+                      <span>👍 {likeCount}</span>
+                    </div>
                   </div>
                   
                   <div className="col-author">{p.author === "주인장" ? "⚙️" : "👤"} {p.author || '익명'}</div>

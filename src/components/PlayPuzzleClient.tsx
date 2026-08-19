@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
+import ShareButton from "./ShareButton";
 
 export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const w = puzzle.width;

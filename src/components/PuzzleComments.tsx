@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../lib/supabaseClient"; 
 import { useRouter } from "next/navigation";
+import ShareButton from "./ShareButton";
 
 // 🌟 props가 puzzleId(문자열)에서 puzzle(객체 통째로)로 변경되었습니다!
 export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any, isGameCleared: boolean }) {
@@ -174,6 +175,7 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
           >
             👎 비추천 {dislikes}
           </button>
+          <ShareButton title={`${puzzle.title} - NONOGRAM IS FUN`} url={`https://nonogramisfun.com/puzzle/${puzzle.slug}`} />
         </div>
 
         {/* 작성자 본인이거나 관리자(주인장)일 경우에만 노출 */}

@@ -12,6 +12,27 @@ export const metadata = {
   icons: {
     icon: '/favicon.png', 
   },
+  openGraph: {
+    title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
+    description: "노노그램(네모로직)은 간단한 규칙과 도전적인 풀이로 두뇌를 자극하는 무료 논리 퍼즐입니다. 나만의 퍼즐을 만들고 공유해보세요.",
+    url: "https://nonogramisfun.com",
+    siteName: "NONOGRAM IS FUN",
+    images: [
+      {
+        url: "https://jxwhdiwwgtnyyqenkpvw.supabase.co/storage/v1/object/public/NONOGRAM%20IS%20FUN/og.png",
+        width: 800,
+        height: 400,
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
+    description: "노노그램(네모로직)은 간단한 규칙과 도전적인 풀이로 두뇌를 자극하는 무료 논리 퍼즐입니다. 나만의 퍼즐을 만들고 공유해보세요.",
+    images: ["https://jxwhdiwwgtnyyqenkpvw.supabase.co/storage/v1/object/public/NONOGRAM%20IS%20FUN/og.png"],
+  },
   other: {
     "google-adsense-account": "ca-pub-4631511581907983",
   },
@@ -97,6 +118,10 @@ export default async function RootLayout({
           strategy="afterInteractive" 
         />
 
+        <Script
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
+          strategy="afterInteractive"
+        />
         
           <MobileMenuProvider>
           {/* 상단 헤더 */}

@@ -169,6 +169,7 @@ export default function Sidebar({
     setShowInfoModal(true);
   };
 
+
   const handleCheckEditNick = async () => {
     if (!editNickname) return setNicknameEditCheck({ checked: false, msg: "닉네임을 입력해주세요.", color: "#ff4d4d" });
     if (editNickname === userInfo?.nickname) return setNicknameEditCheck({ checked: true, msg: "현재 닉네임과 동일합니다.", color: "#4CAF50" });
@@ -196,6 +197,20 @@ export default function Sidebar({
     setNewPassword("");
     setNewPasswordConfirm("");
   };
+
+    const handleDeleteAccount = async () => {
+  if (!confirm("정말 탈퇴하시겠습니까?\n계정 정보가 영구 삭제되며 복구할 수 없습니다.")) return;
+  const res = await fetch("/api/delete-account", { method: "POST" });
+  const result = await res.json();
+  if (!res.ok) {
+    alert("탈퇴 실패: " + (result.error || "알 수 없는 오류"));
+    return;
+  }
+  alert("탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
+  await supabase.auth.signOut();
+  window.location.href = "/";
+};
+
 
   const inputStyle = { fontSize: "16px", width: "100%", boxSizing: "border-box" as const, padding: "10px", marginBottom: "8px", border: "1px solid #ddd", borderRadius: "4px", background: "#f9f9f9" };
   const btnStyle = { flex: 1, padding: "10px", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" as const, cursor: "pointer" };
@@ -235,16 +250,6 @@ export default function Sidebar({
             .sidebar-mobile-nav { display: flex !important; }
           }
         `}</style>
-
-        {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
-        <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
-          <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
-             창작노노그램
-          </Link>
-          <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
-             커뮤니티
-          </Link>
-        </nav>
 
         {/* 내 정보 / 로그인 위젯 */}
         <div className="sidebar-widget" style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "20px" }}>
@@ -303,10 +308,28 @@ export default function Sidebar({
                 <button onClick={handleLogout} style={{ flex: 1, padding: "10px", backgroundColor: "#ff4d4d", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
                   로그아웃
                 </button>
+
+
+
+
+
               </div>
             </div>
           )}
         </div>
+
+        {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
+        <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
+          <Link href="/" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
+             홈
+          </Link>
+          <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
+             창작노노그램
+          </Link>
+          <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
+             커뮤니티
+          </Link>
+        </nav>
 
         {/* 공지사항 위젯 */}
         <div className="sidebar-widget" style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "20px" }}>
@@ -438,6 +461,15 @@ export default function Sidebar({
                   ))}
                 </ul>
               )}
+            </div>
+
+            <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #eee", textAlign: "right" }}>
+              <button
+                onClick={handleDeleteAccount}
+                style={{ background: "none", border: "none", color: "#999", fontSize: "12px", textDecoration: "underline", cursor: "pointer" }}
+              >
+                회원 탈퇴
+              </button>
             </div>
           </div>
         </div>
