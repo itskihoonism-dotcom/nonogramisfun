@@ -15,7 +15,7 @@ body { background-color: #f5f6f7; color: #333; display: flex; flex-direction: co
 .main-content { flex: 1; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 30px; overflow: hidden; min-width: 0; }
 .sidebar { width: 300px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0; }
 .home-split-layout { display: flex; gap: 25px; width: 100%; align-items: flex-start; }
-.home-split-column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.home-split-column { flex: 1; min-width: 0; width: 100%; display: flex; flex-direction: column; }
 .section-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 0 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
 .section-header h2 { margin: 0; font-size: 18px; color: #111; }
 .board-list, .home-community-list { list-style: none; padding: 0; width: 100%; margin: 0; }
