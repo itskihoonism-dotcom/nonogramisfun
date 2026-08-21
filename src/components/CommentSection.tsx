@@ -165,14 +165,28 @@ export default function CommentSection({ postId, initialComments, commentCount }
                     <span style={{ fontSize: "13px", fontWeight: "bold" }}>{reply.author === "주인장" ? "⚙️" : "👤"} {reply.author}</span>
                     <span style={{ fontSize: "11px", color: "#888" }}>{formatDate(reply.created_at)}</span>
                   </div>
-{currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
-                  <>
-                    <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
-                    <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
-                  </>
-                )}
+                  {currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
+                      <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
+                {editingCommentId === reply.id ? (
+                  <div style={{ marginTop: "8px" }}>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      style={{ width: "100%", height: "50px", padding: "8px", fontSize: "13px", border: "1px solid #ddd", borderRadius: "4px", resize: "none", marginBottom: "8px" }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "5px" }}>
+                      <button onClick={() => handleUpdate(reply.id)} style={{ padding: "4px 12px", backgroundColor: "#4CAF50", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>저장</button>
+                      <button onClick={() => setEditingCommentId(null)} style={{ padding: "4px 12px", backgroundColor: "#999", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>취소</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
+                )}
               </div>
             ))}
 

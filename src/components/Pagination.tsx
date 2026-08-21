@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-export default function Pagination({ totalCount, postsPerPage }: { totalCount: number, postsPerPage: number }) {
+export default function Pagination({ totalCount, postsPerPage, basePath = "/community" }: { totalCount: number, postsPerPage: number, basePath?: string }) {
   const searchParams = useSearchParams();
   const currentPage = Number(searchParams.get("page")) || 1;
   const q = searchParams.get("q") || "";
@@ -21,7 +21,7 @@ export default function Pagination({ totalCount, postsPerPage }: { totalCount: n
     <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "20px" }}>
       {pages.map((page) => {
         // 🌟 따옴표와 백틱 문법 에러를 깔끔하게 수정했습니다!
-        const url = `/community?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+        const url = `${basePath}?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
         const isActive = page === currentPage;
         
         return (

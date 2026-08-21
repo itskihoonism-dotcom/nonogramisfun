@@ -62,7 +62,7 @@ export default async function HomePage() {
       <div className="home-split-layout" style={{ display: "flex", gap: "25px", width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>
         
         {/* 🧩 1. 퍼즐 목록 (왼쪽) */}
-        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, width: "100%", display: "flex", flexDirection: "column" }}>
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", margin: "0 0 10px 0", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
             <h2 style={{ margin: 0, fontSize: "18px", color: "#111" }}>퍼즐 목록</h2>
             <Link href="/all-puzzles" style={{ background: "none", fontSize: "14px", border: "none", color: "#2196F3", fontWeight: "bold", cursor: "pointer", textDecoration: "none" }}>전체보기 ➡️</Link>
@@ -94,7 +94,7 @@ export default async function HomePage() {
         </div>
 
         {/* 💬 2. 커뮤니티 목록 (오른쪽) */}
-        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, width: "100%", display: "flex", flexDirection: "column" }}>
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", margin: "0 0 10px 0", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
             <h2 style={{ margin: 0, fontSize: "18px", color: "#111" }}>커뮤니티 최신 글</h2>
             <Link href="/community" style={{ background: "none", border: "none", fontSize: "14px", color: "#2196F3", fontWeight: "bold", cursor: "pointer", textDecoration: "none" }}>전체보기 ➡️</Link>

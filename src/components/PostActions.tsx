@@ -11,37 +11,56 @@ export default function PostActions({ postId, hasPermission }: { postId: number;
 
   const handleDelete = async () => {
     if (!confirm("정말로 이 게시글을 삭제하시겠습니까?\n(삭제된 글과 사진은 복구할 수 없습니다.)")) return;
-    
-    // 1. 게시글 데이터베이스에서 첨부된 이미지 목록을 가져옵니다.
-    const { data: post } = await supabase.from("community_posts").select("image").eq("id", postId).single();
-    
-    // 2. 스토리지(버킷)에 사진이 있다면 깨끗하게 청소합니다!
+
+    // 1. 게시글 데이터베이스에서 첨부 이미지 + 본문 내용을 가져옵니다.
+    const { data: post } = await supabase.from("community_posts").select("image, content").eq("id", postId).single();
+
+    const filePaths: string[] = [];
+
+    // 2. 첨부파일(image 컬럼)에서 경로 추출
     if (post?.image && post.image !== "null" && post.image !== "[]") {
       try {
         const imageUrls = JSON.parse(post.image);
-        const filePaths = imageUrls.map((url: string) => url.split('community_images/')[1]).filter(Boolean);
-        
-        if (filePaths.length > 0) {
-          const { error: storageError } = await supabase.storage.from("community_images").remove(filePaths);
-          if (storageError) console.error("스토리지 이미지 청소 에러:", storageError);
-        }
+        imageUrls.forEach((url: string) => {
+          const path = url.split('community_images/')[1];
+          if (path) filePaths.push(path);
+        });
       } catch (e) {
         console.error("이미지 경로 파싱 에러:", e);
       }
     }
 
-    // 3. 달려있는 모든 댓글을 삭제합니다 (고아 방지)
+    // 3. 본문(content)에 직접 삽입된 이미지에서 경로 추출
+    if (post?.content) {
+      const regex = /<img[^>]+src="([^"]+)"/g;
+      const marker = "community_images/";
+      let match;
+      while ((match = regex.exec(post.content)) !== null) {
+        const idx = match[1].indexOf(marker);
+        if (idx !== -1) filePaths.push(decodeURIComponent(match[1].slice(idx + marker.length)));
+      }
+    }
+
+    // 4. 스토리지(버킷)에서 한 번에 청소
+
+
+    if (filePaths.length > 0) {
+      const { error: storageError } = await supabase.storage.from("community_images").remove(filePaths);
+      if (storageError) console.error("스토리지 이미지 청소 에러:", storageError);
+    }
+
+    // 5. 달려있는 모든 댓글을 삭제합니다 (고아 방지)
     await supabase.from("community_comments").delete().eq("post_id", postId);
-    
-    // 4. 마지막으로 게시글 본체를 삭제합니다.
+
+    // 6. 마지막으로 게시글 본체를 삭제합니다.
     const { error } = await supabase.from("community_posts").delete().eq("id", postId);
-    
+
     if (error) {
       alert("삭제 실패: " + error.message);
     } else {
       alert("게시글이 성공적으로 삭제되었습니다.");
       router.push("/community");
-      router.refresh(); 
+      router.refresh();
     }
   };
 

@@ -1,25 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation"; // 🌟 지워졌던 useRouter 복구!
-import dynamic from "next/dynamic"; // 🌟 지워졌던 dynamic 복구!
-import "react-quill-new/dist/quill.snow.css";
-import { createClient } from "../../../lib/supabaseClient";
-import KakaoAd from "../../../components/KakaoAd";
-
-// 🌟 지워졌던 에디터 설정 복구! (이게 없어서 ReactQuill 에러가 났습니다)
-const ReactQuill = dynamic(() => import("react-quill-new"), { 
-  ssr: false, 
-  loading: () => <div style={{ padding: "20px", color: "#999" }}>에디터를 불러오는 중입니다...</div> 
-});
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabaseClient";
+import KakaoAd from "@/components/KakaoAd";
+import TiptapEditor from "@/components/TiptapEditor";
 
 export default function WritePage() {
   const router = useRouter();
-  const supabase = createClient(); // 🌟 함수 안쪽에 클라이언트 활성화 추가!
-
+  const supabase = createClient();
 
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("잡담");
   const [content, setContent] = useState("");
@@ -27,20 +19,18 @@ export default function WritePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  // 🌟 파일 첨부를 위한 상태 추가
   const [tempFiles, setTempFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
-      // 🌟 getSession -> getUser로 변경
-      const { data: { user } } = await supabase.auth.getUser(); 
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert("로그인이 필요합니다.");
         return router.push("/community");
       }
-      
-      // 🌟 session.user.email -> user.email 로 전부 변경
+
       const { data: userData } = await supabase.from("user_ids").select("nickname, custom_id").eq("email", user.email).maybeSingle();
       const nickname = userData?.nickname || user.user_metadata?.nickname || "익명";
       const isAdmin = nickname === "주인장" || userData?.custom_id === "admin";
@@ -49,21 +39,10 @@ export default function WritePage() {
     checkAuth();
   }, [router]);
 
-  const modules = useMemo(() => ({
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ color: [] }, { background: [] }],
-      [{ list: "ordered" }, { list: "bullet" }, { align: [] }],
-      ["link"],
-    ],
-  }), []);
-
-  // 🌟 파일 선택 함수
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    
+
     if (tempFiles.length + files.length > 5) {
       alert("이미지는 최대 5장까지 첨부 가능합니다.");
       return;
@@ -80,49 +59,61 @@ export default function WritePage() {
     const newFiles = [...tempFiles, ...validFiles];
     setTempFiles(newFiles);
     setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-    e.target.value = ""; // 같은 파일 다시 선택 가능하게 초기화
+    e.target.value = "";
   };
 
-  // 🌟 첨부된 파일 개별 삭제
   const removeFile = (index: number) => {
     const newFiles = tempFiles.filter((_, i) => i !== index);
     setTempFiles(newFiles);
     setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
   };
 
+  const extractStoragePath = (url: string) => {
+    const marker = "/storage/v1/object/public/community_images/";
+    const idx = url.indexOf(marker);
+    return idx === -1 ? null : decodeURIComponent(url.slice(idx + marker.length));
+  };
+
+  const cleanupOrphanImages = async () => {
+    const paths = uploadedImages.map(extractStoragePath).filter((p): p is string => !!p);
+    if (paths.length > 0) {
+      const { error } = await supabase.storage.from("community_images").remove(paths);
+      if (error) console.error("이미지 정리 실패:", error);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) return alert("제목과 내용을 입력해주세요.");
     setIsSaving(true);
 
-    // 🌟 1. 이미지가 있다면 Supabase Storage에 먼저 업로드
     let uploadedImageUrls: string[] = [];
     if (tempFiles.length > 0) {
       for (const file of tempFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `post_images/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage.from("community_images").upload(filePath, file);
         if (uploadError) {
           console.error("이미지 업로드 에러:", uploadError);
           continue;
         }
-        
+
         const { data: publicUrlData } = supabase.storage.from("community_images").getPublicUrl(filePath);
         if (publicUrlData) uploadedImageUrls.push(publicUrlData.publicUrl);
       }
     }
 
     const imageStr = uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : null;
-    
-    // 🌟 2. 게시글 DB에 저장 (첨부된 이미지 주소 포함)
+
     const { error } = await supabase.from("community_posts").insert([{
       category: category,
       title: title,
       content: content,
       author: currentUser.nickname,
-      image: imageStr, // 👈 업로드된 이미지 주소 추가
+      image: imageStr,
       is_notice: category === "공지사항",
+      is_html_mode: isHtmlMode,
       views: 0,
       comments: 0,
       likes: 0,
@@ -135,7 +126,6 @@ export default function WritePage() {
       return;
     }
 
-    // 🌟 3. 포인트 지급
     try {
       const { data: userData } = await supabase.from("user_ids").select("points").eq("email", currentUser.email).maybeSingle();
       const currentPoints = userData?.points || 0;
@@ -143,10 +133,15 @@ export default function WritePage() {
     } catch (pointError) {
       console.error("포인트 지급 에러:", pointError);
     }
-    
+
     alert("게시글이 성공적으로 등록되었습니다! (+10 포인트 획득)");
     router.push("/community");
-    router.refresh(); 
+    router.refresh();
+  };
+
+  const handleCancel = async () => {
+    await cleanupOrphanImages();
+    router.push("/community");
   };
 
   if (!currentUser) return <div style={{ padding: "40px", textAlign: "center" }}>인증 정보를 확인 중입니다...</div>;
@@ -154,23 +149,19 @@ export default function WritePage() {
   return (
     <div className="view active">
 
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고   시작 */}
-            {/* 📢 기기별 맞춤 카카오 애드핏 광고 */}
-            <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-              <div className="ad-pc">
-                <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
-              </div>
-      
-              <div className="ad-mobile">
-                <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
-              </div>
-            </div>
-            {/* 📢 카카오 애드핏 광고 끝 */}
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+        <div className="ad-pc">
+          <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
+        </div>
+        <div className="ad-mobile">
+          <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
+        </div>
+      </div>
 
       <div className="header-title-bar" style={{ borderBottom: "2px solid #111", paddingBottom: "15px", marginBottom: "20px" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0 }}>새 글 쓰기</h2>
       </div>
-      
+
       <div className="write-container">
         {!isPreviewMode ? (
           <div id="write-inputs-area" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -194,28 +185,23 @@ export default function WritePage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label>내용 <span style={{ color: "#ff6d00" }}>*</span></label>
                 <label style={{ fontSize: "13px", color: "#555", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} /> 
+                  <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} />
                   HTML 모드
                 </label>
               </div>
-              
-              <div style={{ position: "relative" }}>
-                {isHtmlMode ? (
-                  <textarea 
-                    className="write-input"
-                    style={{ width: "100%", height: "400px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box" }}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                  />
-                ) : (
-                  <div style={{ background: "#fff", borderRadius: "0 0 6px 6px" }}>
-                    <ReactQuill theme="snow" modules={modules} value={content} onChange={setContent} style={{ height: "350px", marginBottom: "40px" }} />
-                  </div>
-                )}
-              </div>
+
+              {isHtmlMode ? (
+                <textarea
+                  className="write-input"
+                  style={{ width: "100%", height: "400px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box" }}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                />
+              ) : (
+                <TiptapEditor content={content} onChange={setContent} onImageUpload={(url) => setUploadedImages((prev) => [...prev, url])} />
+              )}
             </div>
 
-            {/* 🌟 첨부파일 UI 영역 복원 */}
             <div className="write-group" style={{ marginTop: "15px" }}>
               <label>파일 첨부</label>
               <div className="file-upload-box" style={{ border: "1px solid #ddd", background: "#f9f9f9", padding: "20px", borderRadius: "6px" }}>
@@ -229,8 +215,7 @@ export default function WritePage() {
                   </span>
                 </div>
                 <div style={{ fontSize: "12px", color: "#888" }}>최대 2 MB까지 업로드 가능 (최대 5장)</div>
-                
-                {/* 사진 썸네일 미리보기 영역 */}
+
                 <div id="image-preview-container" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "15px" }}>
                   {previewUrls.map((url, index) => (
                     <div key={index} style={{ position: "relative", display: "inline-block" }}>
@@ -251,10 +236,9 @@ export default function WritePage() {
               <span style={{ color: "#2196F3", fontWeight: "bold", marginRight: "10px", fontSize: "16px" }}>[{category}]</span>
               <h3 style={{ margin: 0, display: "inline-block", fontSize: "22px", color: "#111" }}>{title || '제목이 없습니다'}</h3>
             </div>
-            
-            <div className="read-content ql-editor" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
-            
-            {/* 🌟 본문 미리보기 아래에 첨부한 사진도 렌더링 */}
+
+            <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
+
             {previewUrls.length > 0 && (
               <div style={{ marginTop: "20px" }}>
                 {previewUrls.map((url, index) => (
@@ -266,10 +250,10 @@ export default function WritePage() {
         )}
 
         <div className="write-buttons" style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "30px", paddingBottom: "30px" }}>
-          <button 
-            type="button" 
-            className="btn-cancel-new" 
-            style={{ backgroundColor: isPreviewMode ? "#999" : "#4CAF50", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} 
+          <button
+            type="button"
+            className="btn-cancel-new"
+            style={{ backgroundColor: isPreviewMode ? "#999" : "#4CAF50", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }}
             onClick={() => setIsPreviewMode(!isPreviewMode)}
           >
             {isPreviewMode ? "✏️ 수정하기" : "👀 미리보기"}
@@ -277,7 +261,7 @@ export default function WritePage() {
           <button type="button" className="btn-submit-new" style={{ backgroundColor: "#ff6d00", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} onClick={handleSubmit} disabled={isSaving}>
             {isSaving ? "등록 중..." : "작성 완료"}
           </button>
-          <button type="button" className="btn-cancel-new" style={{ backgroundColor: "#333", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} onClick={() => router.push("/community")}>
+          <button type="button" className="btn-cancel-new" style={{ backgroundColor: "#333", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} onClick={handleCancel}>
             취소
           </button>
         </div>

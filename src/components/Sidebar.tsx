@@ -265,10 +265,10 @@ export default function Sidebar({
                 <button style={{ ...btnStyle, backgroundColor: "#333" }} onClick={handleLogin}>로그인</button>
                 <button style={{ ...btnStyle, backgroundColor: "#2196F3" }} onClick={() => setShowSignup(true)}>회원가입</button>
               </div>
-                            <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleFindId(); }} style={{ color: "#666", textDecoration: "none" }}>아이디 찾기</a>
+              <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
+                <button type="button" onClick={handleFindId} style={{ background: "none", border: "none", padding: 0, color: "#666", textDecoration: "none", cursor: "pointer", fontSize: "13px" }}>아이디 찾기</button>
                 <span style={{ color: "#ccc", margin: "0 8px" }}>|</span>
-                <a href="#" onClick={(e) => { e.preventDefault(); setShowResetPw(true); }} style={{ color: "#666", textDecoration: "none" }}>비밀번호 찾기</a>
+                <button type="button" onClick={() => setShowResetPw(true)} style={{ background: "none", border: "none", padding: 0, color: "#666", textDecoration: "none", cursor: "pointer", fontSize: "13px" }}>비밀번호 찾기</button>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", margin: "16px 0", gap: "8px" }}>
@@ -350,7 +350,7 @@ export default function Sidebar({
                 <li key={n.id} style={{ padding: "6px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}>
                   
                   {/* 🌟 2. 개별 글 클릭 시 /notice 페이지의 해당 글(아코디언)이 열리도록 파라미터 전달 */}
-                  <Link href={`/notice?id=${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
+                  <Link href={`/notice/${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
                     <span>📢</span>
                     <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", width: "85%" }}>
                       {n.title}

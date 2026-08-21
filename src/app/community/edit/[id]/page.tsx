@@ -1,22 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo, use } from "react";
-import { createClient } from "../../../../lib/supabaseClient"; // 🌟 우리가 만든 SSR용 클라이언트로 교체!
+import { useState, useEffect, use } from "react";
+import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css";
-import KakaoAd from "../../../../components/KakaoAd";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { 
-  ssr: false, 
-  loading: () => <div style={{ padding: "20px", color: "#999" }}>에디터를 불러오는 중입니다...</div> 
-});
-
-// 🚨 하드코딩되어 있던 SUPABASE_URL과 KEY 삭제 완료!
+import KakaoAd from "@/components/KakaoAd";
+import TiptapEditor from "@/components/TiptapEditor";
 
 export default function EditPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const supabase = createClient(); // 🌟 새로운 클라이언트 활성화!
+  const supabase = createClient();
 
   const resolvedParams = use(params);
   const postId = resolvedParams.id;
@@ -30,21 +22,20 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  // 파일 첨부를 위한 상태 추가 (기존 이미지와 새 이미지를 분리해서 관리)
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [tempFiles, setTempFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [uploadedInlineImages, setUploadedInlineImages] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchPostData = async () => {
-      // 🌟 getSession() 대신 확실한 getUser()를 사용하여 쿠키에서 정보 확인!
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert("로그인이 필요합니다.");
         return router.push("/community");
       }
-      
+
       const { data: userData } = await supabase.from("user_ids").select("nickname, custom_id").eq("email", user.email).maybeSingle();
       const nickname = userData?.nickname || user.user_metadata?.nickname || "익명";
       const isAdmin = nickname === "주인장" || userData?.custom_id === "admin";
@@ -64,8 +55,8 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
       setTitle(post.title);
       setCategory(post.category);
       setContent(post.content);
+      setIsHtmlMode(post.is_html_mode || false);
 
-      // DB에 저장되어 있던 기존 이미지 파싱해서 불러오기
       if (post.image && post.image !== "null" && post.image !== "[]") {
         try {
           const parsed = JSON.parse(post.image);
@@ -80,22 +71,10 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
     fetchPostData();
   }, [postId, router]);
 
-  const modules = useMemo(() => ({
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ color: [] }, { background: [] }],
-      [{ list: "ordered" }, { list: "bullet" }, { align: [] }],
-      ["link"],
-    ],
-  }), []);
-
-  // 파일 선택 함수
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    
-    // 기존 이미지 + 새 이미지 합쳐서 최대 5장 검사
+
     const totalCurrentImages = existingImages.length + tempFiles.length;
     if (totalCurrentImages + files.length > 5) {
       alert("이미지는 최대 5장까지 첨부 가능합니다.");
@@ -113,31 +92,34 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
     const newFiles = [...tempFiles, ...validFiles];
     setTempFiles(newFiles);
     setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-    e.target.value = ""; 
+    e.target.value = "";
   };
 
-  // 기존에 올렸던 파일 지우기 (휴지통에 담기)
   const removeExistingImage = (index: number) => {
     const targetUrl = existingImages[index];
     setImagesToDelete(prev => [...prev, targetUrl]);
     setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
-  // 방금 새로 올린 파일 지우기
   const removeNewFile = (index: number) => {
     const newFiles = tempFiles.filter((_, i) => i !== index);
     setTempFiles(newFiles);
     setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
   };
 
+  const extractStoragePath = (url: string) => {
+    const marker = "community_images/";
+    const idx = url.indexOf(marker);
+    return idx === -1 ? null : url.slice(idx + marker.length);
+  };
+
   const handleUpdate = async () => {
     if (!title.trim() || !content.trim()) return alert("제목과 내용을 입력해주세요.");
     setIsSaving(true);
 
-    // 1. 휴지통 비우기: 사용자가 지운 기존 사진들을 스토리지(버킷)에서 완전히 삭제!
     if (imagesToDelete.length > 0) {
       try {
-        const filePaths = imagesToDelete.map(url => url.split('community_images/')[1]).filter(Boolean);
+        const filePaths = imagesToDelete.map(extractStoragePath).filter((p): p is string => !!p);
         if (filePaths.length > 0) {
           const { error: storageError } = await supabase.storage.from("community_images").remove(filePaths);
           if (storageError) console.error("스토리지 휴지통 비우기 에러:", storageError);
@@ -146,23 +128,21 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
         console.error("이미지 경로 파싱 에러:", e);
       }
     }
-    
-    // 삭제되지 않고 살아남은 '기존 이미지' 목록
+
     let uploadedImageUrls = [...existingImages];
 
-    // '새로 추가된 이미지'들을 스토리지에 업로드
     if (tempFiles.length > 0) {
       for (const file of tempFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `post_images/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage.from("community_images").upload(filePath, file);
         if (uploadError) {
           console.error("이미지 업로드 에러:", uploadError);
           continue;
         }
-        
+
         const { data: publicUrlData } = supabase.storage.from("community_images").getPublicUrl(filePath);
         if (publicUrlData) uploadedImageUrls.push(publicUrlData.publicUrl);
       }
@@ -174,44 +154,52 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
       category: category,
       title: title,
       content: content,
-      image: imageStr, 
-      is_notice: category === "공지사항"
+      image: imageStr,
+      is_notice: category === "공지사항",
+      is_html_mode: isHtmlMode
     }).eq("id", postId);
 
     setIsSaving(false);
-    
+
     if (error) {
       alert("수정 실패: " + error.message);
     } else {
       alert("게시글이 성공적으로 수정되었습니다!");
       router.push(`/community/${postId}`);
-      router.refresh(); 
+      router.refresh();
     }
+  };
+
+  const handleCancel = async () => {
+    if (uploadedInlineImages.length > 0) {
+      const filePaths = uploadedInlineImages.map(extractStoragePath).filter((p): p is string => !!p);
+      if (filePaths.length > 0) {
+        const { error } = await supabase.storage.from("community_images").remove(filePaths);
+        if (error) console.error("본문 이미지 정리 실패:", error);
+      }
+    }
+    router.push(`/community/${postId}`);
   };
 
   if (isLoading) return <div style={{ padding: "40px", textAlign: "center" }}>게시글 데이터를 불러오는 중...</div>;
 
   return (
     <div className="view active">
-      {/* 📢 기기별 맞춤 카카오 애드핏 광고   시작 */}
-            {/* 📢 기기별 맞춤 카카오 애드핏 광고 */}
-            <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-              <div className="ad-pc">
-                <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
-              </div>
-      
-              <div className="ad-mobile">
-                <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
-              </div>
-            </div>
-            {/* 📢 카카오 애드핏 광고 끝 */}
-            
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+        <div className="ad-pc">
+          <KakaoAd unit="DAN-61T83j6HkgDDyPRJ" width="728" height="90" />
+        </div>
+        <div className="ad-mobile">
+          <KakaoAd unit="DAN-q2LTq4MFcYdFmszx" width="320" height="100" />
+        </div>
+      </div>
+
       <div className="header-title-bar" style={{ borderBottom: "2px solid #111", paddingBottom: "15px", marginBottom: "20px" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0 }}>글 수정하기</h2>
       </div>
-      
+
       <div className="write-container">
-        
+
         {!isPreviewMode ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div className="write-group">
@@ -234,25 +222,21 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label>내용 <span style={{ color: "#ff6d00" }}>*</span></label>
                 <label style={{ fontSize: "13px", color: "#555", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} /> 
+                  <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} />
                   HTML 모드
                 </label>
               </div>
-              
-              <div style={{ position: "relative" }}>
-                {isHtmlMode ? (
-                  <textarea 
-                    className="write-input"
-                    style={{ width: "100%", height: "400px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box" }}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                  />
-                ) : (
-                  <div style={{ background: "#fff", borderRadius: "0 0 6px 6px" }}>
-                    <ReactQuill theme="snow" modules={modules} value={content} onChange={setContent} style={{ height: "350px", marginBottom: "40px" }} />
-                  </div>
-                )}
-              </div>
+
+              {isHtmlMode ? (
+                <textarea
+                  className="write-input"
+                  style={{ width: "100%", height: "400px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box" }}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                />
+              ) : (
+                <TiptapEditor content={content} onChange={setContent} onImageUpload={(url) => setUploadedInlineImages((prev) => [...prev, url])} />
+              )}
             </div>
 
             <div className="write-group" style={{ marginTop: "15px" }}>
@@ -268,7 +252,7 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
                   </span>
                 </div>
                 <div style={{ fontSize: "12px", color: "#888" }}>최대 2 MB까지 업로드 가능 (최대 5장)</div>
-                
+
                 <div id="image-preview-container" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "15px" }}>
                   {existingImages.map((url, index) => (
                     <div key={`existing-${index}`} style={{ position: "relative", display: "inline-block" }}>
@@ -297,9 +281,9 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
               <span style={{ color: "#2196F3", fontWeight: "bold", marginRight: "10px", fontSize: "16px" }}>[{category}]</span>
               <h3 style={{ margin: 0, display: "inline-block", fontSize: "22px", color: "#111" }}>{title || '제목이 없습니다'}</h3>
             </div>
-            
-            <div className="read-content ql-editor" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
-            
+
+            <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
+
             {(existingImages.length > 0 || previewUrls.length > 0) && (
               <div style={{ marginTop: "20px" }}>
                 {existingImages.map((url, index) => (
@@ -314,28 +298,28 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         <div className="write-buttons" style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "30px", paddingBottom: "30px" }}>
-          <button 
-            type="button" 
-            className="btn-cancel-new" 
-            style={{ backgroundColor: isPreviewMode ? "#999" : "#4CAF50", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} 
+          <button
+            type="button"
+            className="btn-cancel-new"
+            style={{ backgroundColor: isPreviewMode ? "#999" : "#4CAF50", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }}
             onClick={() => setIsPreviewMode(!isPreviewMode)}
           >
             {isPreviewMode ? "✏️ 수정 계속하기" : "👀 미리보기"}
           </button>
-          <button 
-            type="button" 
-            className="btn-submit-new" 
-            style={{ backgroundColor: "#ff6d00", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} 
-            onClick={handleUpdate} 
+          <button
+            type="button"
+            className="btn-submit-new"
+            style={{ backgroundColor: "#ff6d00", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }}
+            onClick={handleUpdate}
             disabled={isSaving}
           >
             {isSaving ? "수정 중..." : "수정 완료"}
           </button>
-          <button 
-            type="button" 
-            className="btn-cancel-new" 
-            style={{ backgroundColor: "#333", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }} 
-            onClick={() => router.push(`/community/${postId}`)}
+          <button
+            type="button"
+            className="btn-cancel-new"
+            style={{ backgroundColor: "#333", color: "white", padding: "14px 40px", fontSize: "16px", fontWeight: "bold", border: "none", borderRadius: "6px", cursor: "pointer" }}
+            onClick={handleCancel}
           >
             취소
           </button>

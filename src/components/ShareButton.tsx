@@ -17,7 +17,7 @@ export default function ShareButton({ title, url }: { title: string; url?: strin
       content: {
         title,
         description: "NONOGRAM IS FUN",
-        imageUrl: "https://nonogramisfun.com/logo.webp",
+        imageUrl: "https://jxwhdiwwgtnyyqenkpvw.supabase.co/storage/v1/object/public/NONOGRAM%20IS%20FUN/og.png",
         link: { mobileWebUrl: getShareUrl(), webUrl: getShareUrl() },
       },
       buttons: [{ title: "바로가기", link: { mobileWebUrl: getShareUrl(), webUrl: getShareUrl() } }],
@@ -79,23 +79,30 @@ export default function ShareButton({ title, url }: { title: string; url?: strin
               <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#aaa", fontSize: "20px", cursor: "pointer" }}>×</button>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-around", marginBottom: "25px" }}>
-              <button onClick={handleKakao} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px" }}>
-                <span style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>💬</span>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: "18px", rowGap: "20px", marginBottom: "25px" }}>
+              <button onClick={handleKakao} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px", width: "68px", whiteSpace: "nowrap" }}>
+                <span style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24"><ellipse cx="12" cy="11" rx="8" ry="6.3" fill="#391B1B"/><path d="M8 14.5 L5.5 19 L10 16.2 Z" fill="#391B1B"/></svg>
+                </span>
                 카카오톡
               </button>
-              <button onClick={handleFacebook} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px" }}>
-                <span style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#3B5998", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#fff", fontWeight: "bold" }}>f</span>
+                <button onClick={handleFacebook} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px", width: "68px", whiteSpace: "nowrap" }}>
+                <span style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24"><path fill="#fff" d="M22 12a10 10 0 1 0-11.5 9.95v-7.04H7.9V12h2.6V9.8c0-2.57 1.53-4 3.87-4 1.12 0 2.29.2 2.29.2v2.52h-1.29c-1.27 0-1.67.79-1.67 1.6V12h2.84l-.45 2.91h-2.39v7.04A10 10 0 0 0 22 12z"/></svg>
+                </span>
                 페이스북
               </button>
-              <button onClick={handleX} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px" }}>
-                <span style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "#fff", fontWeight: "bold" }}>X</span>
+                <button onClick={handleX} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px", width: "68px", whiteSpace: "nowrap" }}>
+                <span style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#fff" d="M18.9 3H21l-6.8 7.77L22.2 21h-6.3l-4.9-6.4L5.3 21H3.1l7.3-8.34L2 3h6.4l4.5 5.9L18.9 3zm-1.1 16.2h1.7L7.3 4.7H5.5l12.3 14.5z"/></svg>
+                </span>
                 X
               </button>
-              <button onClick={handleNaver} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px" }}>
-                <span style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#03C75A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#fff", fontWeight: "bold" }}>N</span>
+                <button onClick={handleNaver} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "12px", width: "68px", whiteSpace: "nowrap" }}>
+                <span style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#03C75A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#fff", fontWeight: "bold" }}>N</span>
                 네이버
               </button>
+
             </div>
 
             <div style={{ display: "flex", border: "1px solid #555", borderRadius: "6px", overflow: "hidden" }}>

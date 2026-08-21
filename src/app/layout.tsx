@@ -120,7 +120,7 @@ export default async function RootLayout({
 
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
-          strategy="afterInteractive"
+          strategy="afterInteractive" 
         />
         
           <MobileMenuProvider>
