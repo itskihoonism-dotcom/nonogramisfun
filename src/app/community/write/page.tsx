@@ -135,16 +135,8 @@ export default function WritePage() {
       return;
     }
 
-    // 🌟 3. 포인트 지급
-    try {
-      const { data: userData } = await supabase.from("user_ids").select("points").eq("email", currentUser.email).maybeSingle();
-      const currentPoints = userData?.points || 0;
-      await supabase.from("user_ids").update({ points: currentPoints + 10 }).eq("email", currentUser.email);
-    } catch (pointError) {
-      console.error("포인트 지급 에러:", pointError);
-    }
-    
-    alert("게시글이 성공적으로 등록되었습니다! (+10 포인트 획득)");
+    // 🌟 포인트는 이제 DB 트리거가 서버 측에서 자동 지급합니다 (클라이언트에서 직접 지급 금지)
+    alert("게시글이 성공적으로 등록되었습니다! (+50 포인트 획득)");
     router.push("/community");
     router.refresh(); 
   };
