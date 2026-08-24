@@ -19,8 +19,7 @@ export default function WritePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  const [tempFiles, setTempFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -39,34 +38,9 @@ export default function WritePage() {
     checkAuth();
   }, [router]);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
 
-    if (tempFiles.length + files.length > 5) {
-      alert("이미지는 최대 5장까지 첨부 가능합니다.");
-      return;
-    }
 
-    const validFiles = files.filter(f => {
-      if (f.size > 2 * 1024 * 1024) {
-        alert(`${f.name} 파일은 2MB를 초과하여 제외되었습니다.`);
-        return false;
-      }
-      return true;
-    });
 
-    const newFiles = [...tempFiles, ...validFiles];
-    setTempFiles(newFiles);
-    setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-    e.target.value = "";
-  };
-
-  const removeFile = (index: number) => {
-    const newFiles = tempFiles.filter((_, i) => i !== index);
-    setTempFiles(newFiles);
-    setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-  };
 
   const extractStoragePath = (url: string) => {
     const marker = "/storage/v1/object/public/community_images/";
@@ -86,32 +60,12 @@ export default function WritePage() {
     if (!title.trim() || !content.trim()) return alert("제목과 내용을 입력해주세요.");
     setIsSaving(true);
 
-    let uploadedImageUrls: string[] = [];
-    if (tempFiles.length > 0) {
-      for (const file of tempFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `post_images/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage.from("community_images").upload(filePath, file);
-        if (uploadError) {
-          console.error("이미지 업로드 에러:", uploadError);
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("community_images").getPublicUrl(filePath);
-        if (publicUrlData) uploadedImageUrls.push(publicUrlData.publicUrl);
-      }
-    }
-
-    const imageStr = uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : null;
-
     const { error } = await supabase.from("community_posts").insert([{
       category: category,
       title: title,
       content: content,
       author: currentUser.nickname,
-      image: imageStr,
+      image: null,
       is_notice: category === "공지사항",
       is_html_mode: isHtmlMode,
       views: 0,
@@ -126,15 +80,8 @@ export default function WritePage() {
       return;
     }
 
-    try {
-      const { data: userData } = await supabase.from("user_ids").select("points").eq("email", currentUser.email).maybeSingle();
-      const currentPoints = userData?.points || 0;
-      await supabase.from("user_ids").update({ points: currentPoints + 10 }).eq("email", currentUser.email);
-    } catch (pointError) {
-      console.error("포인트 지급 에러:", pointError);
-    }
-
-    alert("게시글이 성공적으로 등록되었습니다! (+10 포인트 획득)");
+    // 🌟 포인트는 이제 DB 트리거가 서버 측에서 자동 지급합니다 (클라이언트에서 직접 지급 금지)
+    alert("게시글이 성공적으로 등록되었습니다! (+50 포인트 획득)");
     router.push("/community");
     router.refresh();
   };
@@ -202,32 +149,7 @@ export default function WritePage() {
               )}
             </div>
 
-            <div className="write-group" style={{ marginTop: "15px" }}>
-              <label>파일 첨부</label>
-              <div className="file-upload-box" style={{ border: "1px solid #ddd", background: "#f9f9f9", padding: "20px", borderRadius: "6px" }}>
-                <div className="file-row" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <label style={{ background: "#333", color: "#ffffff", padding: "10px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", display: "inline-block", textAlign: "center" }}>
-                    파일 선택
-                    <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleImageSelect} />
-                  </label>
-                  <span style={{ fontSize: "14px", color: "#555" }}>
-                    {tempFiles.length > 0 ? `총 ${tempFiles.length}개 파일 포함됨` : "선택한 파일 없음"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "12px", color: "#888" }}>최대 2 MB까지 업로드 가능 (최대 5장)</div>
-
-                <div id="image-preview-container" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "15px" }}>
-                  {previewUrls.map((url, index) => (
-                    <div key={index} style={{ position: "relative", display: "inline-block" }}>
-                      <img src={url} style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} alt={`미리보기 ${index + 1}`} />
-                      <button type="button" style={{ position: "absolute", top: "-5px", right: "-5px", background: "#f44336", color: "white", border: "none", borderRadius: "50%", width: "22px", height: "22px", cursor: "pointer", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }} onClick={() => removeFile(index)}>
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+    
 
           </div>
         ) : (
@@ -239,13 +161,7 @@ export default function WritePage() {
 
             <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
 
-            {previewUrls.length > 0 && (
-              <div style={{ marginTop: "20px" }}>
-                {previewUrls.map((url, index) => (
-                  <img key={index} src={url} style={{ maxWidth: "100%", borderRadius: "8px", marginTop: "10px", border: "1px solid #ddd" }} alt={`첨부 미리보기 ${index + 1}`} />
-                ))}
-              </div>
-            )}
+
           </div>
         )}
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "../lib/supabaseClient"; 
 import { useRouter } from "next/navigation";
 import ShareButton from "./ShareButton";
+import Link from "next/link";
 
 // 🌟 props가 puzzleId(문자열)에서 puzzle(객체 통째로)로 변경되었습니다!
 export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any, isGameCleared: boolean }) {
@@ -180,12 +181,20 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
 
         {/* 작성자 본인이거나 관리자(주인장)일 경우에만 노출 */}
         {canDelete && (
-          <button 
-            onClick={handleDeletePuzzle} 
-            style={{ backgroundColor: "#f44336", color: "#fff", border: "none", padding: "6px 16px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
-          >
-            삭제
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <Link
+              href={`/puzzle/edit/${puzzle.id}`}
+              style={{ backgroundColor: "#2196F3", color: "#fff", border: "none", padding: "6px 16px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", textDecoration: "none" }}
+            >
+              수정
+            </Link>
+            <button 
+              onClick={handleDeletePuzzle} 
+              style={{ backgroundColor: "#f44336", color: "#fff", border: "none", padding: "6px 16px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+            >
+              삭제
+            </button>
+          </div>
         )}
       </div>
 

@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Script from "next/script";
 import { MobileMenuProvider } from "../components/MobileMenuContext";
+import { LevelBadgeSprite } from "../components/LevelBadge";
 
 export const metadata = {
   title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
@@ -110,6 +111,7 @@ export default async function RootLayout({
         flexDirection: "column", 
         minHeight: "100vh" 
       }}>
+        <LevelBadgeSprite />
 
         <Script 
           async 

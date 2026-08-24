@@ -519,6 +519,11 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
 
+
+      {puzzle.content && (
+        <div className="read-content" style={{ marginTop: "20px", padding: "20px 0", borderTop: "1px solid #eee" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
+      )}
+
       <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
 
       

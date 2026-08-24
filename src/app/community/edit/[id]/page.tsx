@@ -22,10 +22,6 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  const [existingImages, setExistingImages] = useState<string[]>([]);
-  const [tempFiles, setTempFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [uploadedInlineImages, setUploadedInlineImages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -57,55 +53,14 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
       setContent(post.content);
       setIsHtmlMode(post.is_html_mode || false);
 
-      if (post.image && post.image !== "null" && post.image !== "[]") {
-        try {
-          const parsed = JSON.parse(post.image);
-          setExistingImages(Array.isArray(parsed) ? parsed : [post.image]);
-        } catch (e) {
-          setExistingImages([post.image]);
-        }
-      }
 
       setIsLoading(false);
     };
     fetchPostData();
   }, [postId, router]);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
 
-    const totalCurrentImages = existingImages.length + tempFiles.length;
-    if (totalCurrentImages + files.length > 5) {
-      alert("이미지는 최대 5장까지 첨부 가능합니다.");
-      return;
-    }
 
-    const validFiles = files.filter(f => {
-      if (f.size > 2 * 1024 * 1024) {
-        alert(`${f.name} 파일은 2MB를 초과하여 제외되었습니다.`);
-        return false;
-      }
-      return true;
-    });
-
-    const newFiles = [...tempFiles, ...validFiles];
-    setTempFiles(newFiles);
-    setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-    e.target.value = "";
-  };
-
-  const removeExistingImage = (index: number) => {
-    const targetUrl = existingImages[index];
-    setImagesToDelete(prev => [...prev, targetUrl]);
-    setExistingImages(existingImages.filter((_, i) => i !== index));
-  };
-
-  const removeNewFile = (index: number) => {
-    const newFiles = tempFiles.filter((_, i) => i !== index);
-    setTempFiles(newFiles);
-    setPreviewUrls(newFiles.map(file => URL.createObjectURL(file)));
-  };
 
   const extractStoragePath = (url: string) => {
     const marker = "community_images/";
@@ -117,44 +72,10 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
     if (!title.trim() || !content.trim()) return alert("제목과 내용을 입력해주세요.");
     setIsSaving(true);
 
-    if (imagesToDelete.length > 0) {
-      try {
-        const filePaths = imagesToDelete.map(extractStoragePath).filter((p): p is string => !!p);
-        if (filePaths.length > 0) {
-          const { error: storageError } = await supabase.storage.from("community_images").remove(filePaths);
-          if (storageError) console.error("스토리지 휴지통 비우기 에러:", storageError);
-        }
-      } catch (e) {
-        console.error("이미지 경로 파싱 에러:", e);
-      }
-    }
-
-    let uploadedImageUrls = [...existingImages];
-
-    if (tempFiles.length > 0) {
-      for (const file of tempFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `post_images/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage.from("community_images").upload(filePath, file);
-        if (uploadError) {
-          console.error("이미지 업로드 에러:", uploadError);
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("community_images").getPublicUrl(filePath);
-        if (publicUrlData) uploadedImageUrls.push(publicUrlData.publicUrl);
-      }
-    }
-
-    const imageStr = uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : null;
-
     const { error } = await supabase.from("community_posts").update({
       category: category,
       title: title,
       content: content,
-      image: imageStr,
       is_notice: category === "공지사항",
       is_html_mode: isHtmlMode
     }).eq("id", postId);
@@ -239,40 +160,7 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
               )}
             </div>
 
-            <div className="write-group" style={{ marginTop: "15px" }}>
-              <label>파일 첨부</label>
-              <div className="file-upload-box" style={{ border: "1px solid #ddd", background: "#f9f9f9", padding: "20px", borderRadius: "6px" }}>
-                <div className="file-row" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <label style={{ background: "#333", color: "#ffffff", padding: "10px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", display: "inline-block", textAlign: "center" }}>
-                    파일 선택
-                    <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleImageSelect} />
-                  </label>
-                  <span style={{ fontSize: "14px", color: "#555" }}>
-                    {existingImages.length + tempFiles.length > 0 ? `총 ${existingImages.length + tempFiles.length}개 파일 포함됨` : "선택한 파일 없음"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "12px", color: "#888" }}>최대 2 MB까지 업로드 가능 (최대 5장)</div>
 
-                <div id="image-preview-container" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "15px" }}>
-                  {existingImages.map((url, index) => (
-                    <div key={`existing-${index}`} style={{ position: "relative", display: "inline-block" }}>
-                      <img src={url} style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} alt={`기존 첨부 ${index + 1}`} />
-                      <button type="button" style={{ position: "absolute", top: "-5px", right: "-5px", background: "#333", color: "white", border: "none", borderRadius: "50%", width: "22px", height: "22px", cursor: "pointer", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }} onClick={() => removeExistingImage(index)}>
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  {previewUrls.map((url, index) => (
-                    <div key={`new-${index}`} style={{ position: "relative", display: "inline-block" }}>
-                      <img src={url} style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} alt={`새 첨부 ${index + 1}`} />
-                      <button type="button" style={{ position: "absolute", top: "-5px", right: "-5px", background: "#f44336", color: "white", border: "none", borderRadius: "50%", width: "22px", height: "22px", cursor: "pointer", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }} onClick={() => removeNewFile(index)}>
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
           </div>
         ) : (
@@ -284,16 +172,7 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
 
             <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
 
-            {(existingImages.length > 0 || previewUrls.length > 0) && (
-              <div style={{ marginTop: "20px" }}>
-                {existingImages.map((url, index) => (
-                  <img key={`prev-exist-${index}`} src={url} style={{ maxWidth: "100%", borderRadius: "8px", marginTop: "10px", border: "1px solid #ddd" }} alt={`기존 첨부 미리보기 ${index + 1}`} />
-                ))}
-                {previewUrls.map((url, index) => (
-                  <img key={`prev-new-${index}`} src={url} style={{ maxWidth: "100%", borderRadius: "8px", marginTop: "10px", border: "1px solid #ddd" }} alt={`새 첨부 미리보기 ${index + 1}`} />
-                ))}
-              </div>
-            )}
+
           </div>
         )}
 

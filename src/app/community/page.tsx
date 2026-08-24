@@ -3,6 +3,8 @@ import Link from "next/link";
 import SearchBox from "../../components/SearchBox";
 import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
+import { getAuthorBadgeMap } from "../../lib/levelUtils";
+import AuthorBadge from "@/components/AuthorBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +115,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
             </div>
             {/* 🌟 모바일 전용: 작성자/날짜/조회/추천 압축 표시 */}
             <div className="post-meta-mobile">
-              <span>{post.author === "주인장" ? "⚙️" : "👤"} {post.author}</span>
+              <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
               <span>·</span>
               <span>{formatDate(post.created_at)}</span>
               <span>·</span>
@@ -123,7 +125,9 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
             </div>
           </div>
           
-          <div className="col-author">{post.author === "주인장" ? "⚙️" : "👤"} {post.author}</div>
+          <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+           <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
+          </div>
           <div className="col-date">{formatDate(post.created_at)}</div>
           <div className="col-views">{post.views || 0}</div>
           <div className="col-likes">👍 {post.likes || 0}</div>
@@ -131,6 +135,12 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
       </li>
     );
   };
+
+
+  const authorInfoMap = await getAuthorBadgeMap(supabase, [...notices, ...populars, ...regulars].map((p) => p.author));
+
+
+
 
   return (
     <div className="view active">

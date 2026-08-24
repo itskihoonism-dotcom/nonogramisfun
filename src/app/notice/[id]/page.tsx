@@ -3,6 +3,7 @@ import { createClient } from "../../../lib/supabaseServer";
 import Link from "next/link";
 import NoticeCommentSection from "../../../components/NoticeCommentSection";
 import { notFound } from "next/navigation";
+import LevelBadge from "../../../components/LevelBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,9 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
       <div className="read-header-area">
         <h1 className="read-title">{notice.title}</h1>
         <div className="read-meta-box">
-          <div className="read-avatar">⚙️</div>
+          <div className="read-avatar" style={{ background: "none" }}>
+            <LevelBadge isAdmin />
+          </div>
           <div className="read-meta-text">
             <span className="read-author">주인장</span>
             <span className="read-time-views">{formatDate(notice.created_at)} | 조회수 {(notice.views || 0) + 1}</span>
@@ -48,7 +51,7 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="read-content ql-editor" style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: notice.content }} />
+      <div className="read-content" dangerouslySetInnerHTML={{ __html: notice.content }} />
 
       {isAdmin && (
         <div className="read-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", borderBottom: "1px solid #eee", padding: "15px 0" }}>

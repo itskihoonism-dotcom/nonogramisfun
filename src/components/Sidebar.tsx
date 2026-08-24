@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import { useMobileMenu } from "./MobileMenuContext";
+import LevelBadge, { getLevel } from "./LevelBadge";
 
 export default function Sidebar({
   initialUser,
@@ -295,8 +296,9 @@ export default function Sidebar({
             </div>
           ) : (
             <div id="user-info" style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "5px", color: "#111" }}>
-                {userInfo.isAdmin ? "⚙️" : "👤"} <span style={{ verticalAlign: "middle" }}>{userInfo.nickname}님</span>
+              <p style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "5px", color: "#111", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <LevelBadge level={getLevel(userInfo.points)} isAdmin={userInfo.isAdmin} />
+                <span>{userInfo.nickname}님</span>
               </p>
               <p style={{ fontSize: "14px", fontWeight: "bold", marginTop: 0, marginBottom: "15px", color: "#ff5722" }}>
                 🏆 내 포인트: {userInfo.points.toLocaleString()} P

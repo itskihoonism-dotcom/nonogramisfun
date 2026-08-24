@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import KakaoAd from "../components/KakaoAd";
+import AuthorBadge from "./AuthorBadge";
 
 // N시간 전/분 전 포맷 적용
 const formatDate = (dateString: string) => {
@@ -37,6 +38,8 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
 
   // 🌟 관리자 미리보기 팝업 상태 추가
   const [previewPuzzle, setPreviewPuzzle] = useState<any>(null);
+
+    const [authorInfo, setAuthorInfo] = useState<Record<string, { points: number; isAdmin: boolean }>>({});
 
   // 고유한 크기만 뽑아내서 오름차순 정렬
   const availableSizes = Array.from(
@@ -80,6 +83,24 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
     };
     fetchCompletedPuzzles();
   }, [supabase]);
+
+
+    useEffect(() => {
+    const fetchAuthorBadges = async () => {
+      const authors = Array.from(new Set(puzzles.map(p => p.author).filter(Boolean)));
+      if (authors.length === 0) return;
+
+      const { data } = await supabase.from("user_ids").select("nickname, points, custom_id").in("nickname", authors);
+      if (!data) return;
+
+      const map: Record<string, { points: number; isAdmin: boolean }> = {};
+      data.forEach((u: any) => {
+        map[u.nickname] = { points: u.points || 0, isAdmin: u.nickname === "주인장" || u.custom_id === "admin" };
+      });
+      setAuthorInfo(map);
+    };
+    fetchAuthorBadges();
+  }, [puzzles]);
 
   // 🌟 관리자 전용: 퍼즐 승인 처리
   const handleApprove = async (id: number, title: string) => {
@@ -223,7 +244,7 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
                     </div>
                     {/* 🌟 모바일 전용: 작성자/날짜/조회/추천 압축 표시 */}
                     <div className="post-meta-mobile">
-                      <span>{p.author === "주인장" ? "⚙️" : "👤"} {p.author || "익명"}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><AuthorBadge author={p.author || "익명"} info={authorInfo[p.author]} /></span>
                       <span>·</span>
                       <span>{formatDate(p.created_at)}</span>
                       <span>·</span>
@@ -233,7 +254,9 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
                     </div>
                   </div>
                   
-                  <div className="col-author">{p.author === "주인장" ? "⚙️" : "👤"} {p.author || '익명'}</div>
+                  <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                    <AuthorBadge author={p.author || '익명'} info={authorInfo[p.author]} />
+                  </div>
                   <div className="col-date">{formatDate(p.created_at)}</div>
                   <div className="col-views">{p.views || 0}</div>
                   <div className="col-likes">👍 {likeCount}</div>

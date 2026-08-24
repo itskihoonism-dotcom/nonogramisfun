@@ -2,6 +2,7 @@ import { createClient } from "../../lib/supabaseServer";
 import Link from "next/link";
 import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
+import LevelBadge from "../../components/LevelBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +80,9 @@ export default async function NoticePage({ searchParams }: { searchParams: any }
                 <div className="col-title" style={{ display: "flex", alignItems: "center", overflow: "hidden" }}>
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title}</span>
                 </div>
-                <div className="col-author">⚙️ 주인장</div>
+                <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                  <LevelBadge isAdmin size="sm" /> 주인장
+                </div>
                 <div className="col-date">{formatDate(n.created_at)}</div>
                 <div className="col-views">{n.views || 0}</div>
               </Link>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
 import KakaoAd from "../../components/KakaoAd";
+import TiptapEditor from "../../components/TiptapEditor";
 import { makeSlug } from "@/lib/slug";
 
 
@@ -24,6 +25,8 @@ export default function MakePuzzlePage() {
   const [userGrid, setUserGrid] = useState<number[]>([]);
   const [zoomFactor, setZoomFactor] = useState(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false); // 🌟 전체화면 상태
+  const [content, setContent] = useState("");
+    const [isHtmlMode, setIsHtmlMode] = useState(false);
 
   // 드래그 상태 추적용
   const dragInfo = useRef({
@@ -320,7 +323,9 @@ export default function MakePuzzlePage() {
           is_approved: currentUser.isAdmin, 
           views: 0,
           author: currentUser.nickname,
-          slug
+          slug,
+          content,
+          is_html_mode: isHtmlMode
       }]);
 
       // 유니크 제약 위반이면 번호를 올려 재시도
@@ -458,7 +463,25 @@ export default function MakePuzzlePage() {
             </div>
           </div>
           
-          {/* 하단 저장 버튼 그룹 */}
+          <div style={{ marginTop: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "bold" }}>📝 그림 설명 (선택사항)</label>
+              <label style={{ fontSize: "13px", color: "#555", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} />
+                HTML 모드
+              </label>
+            </div>
+            {isHtmlMode ? (
+              <textarea
+                style={{ width: "100%", height: "300px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box", padding: "14px", border: "1px solid #ddd", borderRadius: "6px" }}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            ) : (
+              <TiptapEditor content={content} onChange={setContent} />
+            )}
+          </div>
+
           <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={saveMakerProgress} style={{ padding: "10px 20px", fontSize: "15px", cursor: "pointer", backgroundColor: "#FF9800", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}>💾 임시저장</button>
             <button onClick={loadMakerProgress} style={{ padding: "10px 20px", fontSize: "15px", cursor: "pointer", backgroundColor: "#9C27B0", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}>📂 불러오기</button>

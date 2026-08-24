@@ -2,6 +2,8 @@ import { createClient } from "../lib/supabaseServer";
 import Link from "next/link";
 import MainClientArea from "../components/MainClientArea";
 import KakaoAd from "../components/KakaoAd";
+import { getAuthorBadgeMap, getLevel } from "../lib/levelUtils";
+import LevelBadge from "../components/LevelBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +34,14 @@ export default async function HomePage() {
       .limit(6),
     supabase
       .from('community_posts')
-      .select('id, title, author, category, created_at, comments')
+      .select('id, title, author, category, created_at, comments, views')
       .order('created_at', { ascending: false })
       .limit(6)
   ]);
 
   const pData = puzzlesRes.data || [];
   const cData = commRes.data || [];
+    const authorInfoMap = await getAuthorBadgeMap(supabase, [...pData.map((p) => p.author), ...cData.map((c) => c.author)]);
 
   return (
     <div className="view active" style={{ display: "block", minHeight: "100vh" }}>
@@ -81,8 +84,10 @@ export default async function HomePage() {
                         {isNew(p.created_at) && <span style={{ backgroundColor: "#ff5722", color: "white", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "3px", marginRight: "6px", verticalAlign: "middle" }}>N</span>}
                         {p.title} <span style={{ fontWeight: "normal", fontSize: "13px", color: "#666" }}>({p.width}x{p.height})</span>
                       </span>
-                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}>
-                        {formatDate(p.created_at)} | 👤 {p.author || '익명'} | 조회 {p.views || 0}
+                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                        <span>{formatDate(p.created_at)} |</span>
+                        {authorInfoMap[p.author] && <LevelBadge level={getLevel(authorInfoMap[p.author].points)} isAdmin={authorInfoMap[p.author].isAdmin} size="sm" />}
+                        <span>{p.author || '익명'} | 조회 {p.views || 0}</span>
                       </span>
                     </div>
                     
@@ -112,8 +117,10 @@ export default async function HomePage() {
                         {c.title}
                         {c.comments > 0 && <span style={{ color: "#ff5722", fontWeight: "bold", fontSize: "12px", marginLeft: "4px" }}>[{c.comments}]</span>}
                       </span>
-                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}>
-                        {formatDate(c.created_at)} | {c.author}
+                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                        <span>{formatDate(c.created_at)} |</span>
+                        {authorInfoMap[c.author] && <LevelBadge level={getLevel(authorInfoMap[c.author].points)} isAdmin={authorInfoMap[c.author].isAdmin} size="sm" />}
+                                                <span>{c.author} | 조회 {c.views || 0}</span>
                       </span>
                     </div>
                   </Link>

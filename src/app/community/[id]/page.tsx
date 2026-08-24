@@ -7,6 +7,8 @@ import KakaoAd from "../../../components/KakaoAd";
 import ShareButton from "../../../components/ShareButton";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getAuthorBadgeMap, getLevel } from "@/lib/levelUtils";
+import LevelBadge from "@/components/LevelBadge";
 import { cache } from "react"; // 
 
 const SITE_NAME = "NONOGRAM IS FUN";
@@ -142,6 +144,11 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   // 🌟 현재 유저가 작성자 본인이거나 관리자인지 확인! (Boolean으로 꽉 묶어줍니다)
   const hasPermission = Boolean(isAdmin || (currentUserNickname !== "" && currentUserNickname === post.author));
 
+
+    const authorInfoMap = await getAuthorBadgeMap(supabase, [post.author]);
+  const authorInfo = authorInfoMap[post.author];
+
+
   return (
     <div className="view active">
 
@@ -164,10 +171,12 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       <div className="read-header-area">
         <h1 className="read-title">{post.title}</h1>
         <div className="read-meta-box">
-          <div className="read-avatar">{post.author === "주인장" ? "⚙️" : "👤"}</div>
+          <div className="read-avatar" style={{ background: "none" }}>
+            {authorInfo ? <LevelBadge level={getLevel(authorInfo.points)} isAdmin={authorInfo.isAdmin} /> : (post.author === "주인장" ? "⚙️" : "👤")}
+          </div>
           <div className="read-meta-text">
             <span className="read-author">{post.author}</span>
-            <span className="read-time-views">{formatDate(post.created_at)} | 조회수 {post.views + 1}</span>
+            <span className="read-time-views">{formatDate(post.created_at)} | 조회수 {post.views + 1} | 👍 {post.likes || 0}</span>
           </div>
         </div>
       </div>

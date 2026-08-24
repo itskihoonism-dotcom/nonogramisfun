@@ -6,9 +6,18 @@ const TIERS: [string, string][] = [
   ["루비", "#e11d48"], ["옵시디언", "#d4a843"], ["다이아", "#38bdf8"],
 ];
 
+function cumulativeForLevel(level: number): number {
+  return 50 * (level - 1) * (level + 6);
+}
+
 export function getLevel(points: number): number {
-  const level = Math.floor((points || 0) / 50) + 1;
-  return Math.min(99, Math.max(1, level));
+  const p = points || 0;
+  let level = 1;
+  for (let l = 2; l <= 99; l++) {
+    if (p >= cumulativeForLevel(l)) level = l;
+    else break;
+  }
+  return level;
 }
 
 export function LevelBadgeSprite() {
