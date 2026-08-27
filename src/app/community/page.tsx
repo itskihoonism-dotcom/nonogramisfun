@@ -3,6 +3,8 @@ import Link from "next/link";
 import SearchBox from "../../components/SearchBox";
 import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
+import { getAuthorBadgeMap } from "../../lib/levelUtils";
+import AuthorBadge from "@/components/AuthorBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +61,8 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
   // 🌟 24시간 이내 작성글은 'N시간 전' / 'N분 전'으로 표시하는 기능 추가!
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
+    const isoString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+    const d = new Date(isoString);
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -96,22 +99,36 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
       <li key={`${type}-${post.id}`}>
         <Link href={`/community/${post.id}`} className="post-row-link">
           <div className="col-badge">{badge}</div>
-          <div className="col-cate" style={{ color: type === "notice" || post.category === "공지사항" ? "#f44336" : "" }}>{post.category}</div>
+          <div className="col-cate" style={{ color: type === "notice" || post.category === "가이드" ? "#f44336" : "" }}>{post.category}</div>
           
           {/* 🌟 핵심 수정: Flexbox를 이용해 제목은 잘리더라도 댓글 수는 영역을 절대 사수하게 만듭니다! */}
-          <div className="col-title" style={{ display: "flex", alignItems: "center", overflow: "hidden" }}>
-            {imageIcon}
-            <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {post.title}
-            </span>
-            {post.comments > 0 && (
-              <span style={{ color: "#e53935", fontWeight: "bold", fontSize: "14px", marginLeft: "6px", flexShrink: 0 }}>
-                [{post.comments}]
+          <div className="col-title" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", overflow: "hidden", width: "100%" }}>
+              {imageIcon}
+              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {post.title}
               </span>
-            )}
+              {post.comments > 0 && (
+                <span style={{ color: "#e53935", fontWeight: "bold", fontSize: "14px", marginLeft: "6px", flexShrink: 0 }}>
+                  [{post.comments}]
+                </span>
+              )}
+            </div>
+            {/* 🌟 모바일 전용: 작성자/날짜/조회/추천 압축 표시 */}
+            <div className="post-meta-mobile">
+              <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
+              <span>·</span>
+              <span>{formatDate(post.created_at)}</span>
+              <span>·</span>
+              <span>조회 {post.views || 0}</span>
+              <span>·</span>
+              <span>👍 {post.likes || 0}</span>
+            </div>
           </div>
           
-          <div className="col-author">{post.author === "주인장" ? "⚙️" : "👤"} {post.author}</div>
+          <div className="col-author">
+            <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
+          </div>
           <div className="col-date">{formatDate(post.created_at)}</div>
           <div className="col-views">{post.views || 0}</div>
           <div className="col-likes">👍 {post.likes || 0}</div>
@@ -119,6 +136,12 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
       </li>
     );
   };
+
+
+  const authorInfoMap = await getAuthorBadgeMap(supabase, [...notices, ...populars, ...regulars].map((p) => p.author));
+
+
+
 
   return (
     <div className="view active">

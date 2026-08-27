@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import { useMobileMenu } from "./MobileMenuContext";
+import LevelBadge, { getLevel } from "./LevelBadge";
 
 export default function Sidebar({
   initialUser,
@@ -17,6 +18,11 @@ export default function Sidebar({
   // 🌟 서버에서 이미 받아온 정보로 초기값을 채우므로 로딩/깜빡임이 완전히 사라집니다!
   const [userInfo, setUserInfo] = useState(initialUser);
   const notices = initialNotices;
+
+  // 🌟 router.refresh() 등으로 서버가 새 initialUser를 내려주면 사이드바도 즉시 반영
+  useEffect(() => {
+    setUserInfo(initialUser);
+  }, [initialUser]);
 
   // 모달창 상태
   const [showSignup, setShowSignup] = useState(false);
@@ -50,16 +56,13 @@ export default function Sidebar({
   const handleLogin = async () => {
     if (!loginId || !loginPw) return alert("아이디와 비밀번호를 입력해주세요.");
     try {
-      const { data, error: searchError } = await supabase
-        .from("user_ids")
-        .select("email")
-        .eq("custom_id", loginId)
-        .maybeSingle();
+      const { data: foundEmail, error: searchError } = await supabase
+        .rpc("get_email_by_custom_id", { p_custom_id: loginId });
 
-      if (searchError || !data) return alert("존재하지 않는 아이디입니다.");
+      if (searchError || !foundEmail) return alert("존재하지 않는 아이디입니다.");
 
       const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: data.email,
+        email: foundEmail,
         password: loginPw,
       });
 
@@ -130,8 +133,8 @@ export default function Sidebar({
   const handleFindId = async () => {
     const email = prompt("가입 시 등록하신 이메일 주소를 입력해 주세요.");
     if (!email) return;
-    const { data } = await supabase.from("user_ids").select("custom_id").eq("email", email.trim()).maybeSingle();
-    if (data?.custom_id) alert(`회원님의 아이디는 [ ${data.custom_id} ] 입니다.`);
+    const { data: foundCustomId } = await supabase.rpc("get_custom_id_by_email", { p_email: email.trim() });
+    if (foundCustomId) alert(`회원님의 아이디는 [ ${foundCustomId} ] 입니다.`);
     else alert("해당 이메일로 가입된 아이디를 찾을 수 없습니다.");
   };
 
@@ -169,6 +172,7 @@ export default function Sidebar({
     setShowInfoModal(true);
   };
 
+
   const handleCheckEditNick = async () => {
     if (!editNickname) return setNicknameEditCheck({ checked: false, msg: "닉네임을 입력해주세요.", color: "#ff4d4d" });
     if (editNickname === userInfo?.nickname) return setNicknameEditCheck({ checked: true, msg: "현재 닉네임과 동일합니다.", color: "#4CAF50" });
@@ -196,6 +200,20 @@ export default function Sidebar({
     setNewPassword("");
     setNewPasswordConfirm("");
   };
+
+    const handleDeleteAccount = async () => {
+  if (!confirm("정말 탈퇴하시겠습니까?\n계정 정보가 영구 삭제되며 복구할 수 없습니다.")) return;
+  const res = await fetch("/api/delete-account", { method: "POST" });
+  const result = await res.json();
+  if (!res.ok) {
+    alert("탈퇴 실패: " + (result.error || "알 수 없는 오류"));
+    return;
+  }
+  alert("탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
+  await supabase.auth.signOut();
+  window.location.href = "/";
+};
+
 
   const inputStyle = { fontSize: "16px", width: "100%", boxSizing: "border-box" as const, padding: "10px", marginBottom: "8px", border: "1px solid #ddd", borderRadius: "4px", background: "#f9f9f9" };
   const btnStyle = { flex: 1, padding: "10px", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" as const, cursor: "pointer" };
@@ -236,16 +254,6 @@ export default function Sidebar({
           }
         `}</style>
 
-        {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
-        <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
-          <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
-             창작노노그램
-          </Link>
-          <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
-             커뮤니티
-          </Link>
-        </nav>
-
         {/* 내 정보 / 로그인 위젯 */}
         <div className="sidebar-widget" style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "20px" }}>
           <h3 style={{ margin: "0 0 15px 0", fontSize: "16px", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
@@ -260,10 +268,10 @@ export default function Sidebar({
                 <button style={{ ...btnStyle, backgroundColor: "#333" }} onClick={handleLogin}>로그인</button>
                 <button style={{ ...btnStyle, backgroundColor: "#2196F3" }} onClick={() => setShowSignup(true)}>회원가입</button>
               </div>
-                            <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleFindId(); }} style={{ color: "#666", textDecoration: "none" }}>아이디 찾기</a>
+              <div style={{ marginTop: "12px", textAlign: "center", fontSize: "13px" }}>
+                <button type="button" onClick={handleFindId} style={{ background: "none", border: "none", padding: 0, color: "#666", textDecoration: "none", cursor: "pointer", fontSize: "13px" }}>아이디 찾기</button>
                 <span style={{ color: "#ccc", margin: "0 8px" }}>|</span>
-                <a href="#" onClick={(e) => { e.preventDefault(); setShowResetPw(true); }} style={{ color: "#666", textDecoration: "none" }}>비밀번호 찾기</a>
+                <button type="button" onClick={() => setShowResetPw(true)} style={{ background: "none", border: "none", padding: 0, color: "#666", textDecoration: "none", cursor: "pointer", fontSize: "13px" }}>비밀번호 찾기</button>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", margin: "16px 0", gap: "8px" }}>
@@ -290,8 +298,9 @@ export default function Sidebar({
             </div>
           ) : (
             <div id="user-info" style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "5px", color: "#111" }}>
-                {userInfo.isAdmin ? "⚙️" : "👤"} <span style={{ verticalAlign: "middle" }}>{userInfo.nickname}님</span>
+              <p style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "5px", color: "#111", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <LevelBadge level={getLevel(userInfo.points)} isAdmin={userInfo.isAdmin} />
+                <span>{userInfo.nickname}님</span>
               </p>
               <p style={{ fontSize: "14px", fontWeight: "bold", marginTop: 0, marginBottom: "15px", color: "#ff5722" }}>
                 🏆 내 포인트: {userInfo.points.toLocaleString()} P
@@ -303,10 +312,28 @@ export default function Sidebar({
                 <button onClick={handleLogout} style={{ flex: 1, padding: "10px", backgroundColor: "#ff4d4d", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
                   로그아웃
                 </button>
+
+
+
+
+
               </div>
             </div>
           )}
         </div>
+
+        {/* 🌟 모바일 드로어 전용 사이트 내비게이션 (데스크톱 사이드바에는 보이지 않음) */}
+        <nav className="sidebar-mobile-nav" style={{ display: "none", flexDirection: "column" }}>
+          <Link href="/" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
+             홈
+          </Link>
+          <Link href="/all-puzzles" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px", borderBottom: "1px solid #ddd" }}>
+             창작노노그램
+          </Link>
+          <Link href="/community" onClick={() => setDrawerOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 4px", color: "#222", textDecoration: "none", fontWeight: "bold", fontSize: "15px" }}>
+             커뮤니티
+          </Link>
+        </nav>
 
         {/* 공지사항 위젯 */}
         <div className="sidebar-widget" style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "20px" }}>
@@ -327,7 +354,7 @@ export default function Sidebar({
                 <li key={n.id} style={{ padding: "6px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}>
                   
                   {/* 🌟 2. 개별 글 클릭 시 /notice 페이지의 해당 글(아코디언)이 열리도록 파라미터 전달 */}
-                  <Link href={`/notice?id=${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
+                  <Link href={`/notice/${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
                     <span>📢</span>
                     <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", width: "85%" }}>
                       {n.title}
@@ -438,6 +465,15 @@ export default function Sidebar({
                   ))}
                 </ul>
               )}
+            </div>
+
+            <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #eee", textAlign: "right" }}>
+              <button
+                onClick={handleDeleteAccount}
+                style={{ background: "none", border: "none", color: "#999", fontSize: "12px", textDecoration: "underline", cursor: "pointer" }}
+              >
+                회원 탈퇴
+              </button>
             </div>
           </div>
         </div>

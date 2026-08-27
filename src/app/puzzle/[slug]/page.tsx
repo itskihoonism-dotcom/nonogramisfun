@@ -5,6 +5,9 @@ import KakaoAd from "../../../components/KakaoAd";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { getAuthorBadgeMap, getLevel } from "../../../lib/levelUtils";
+import LevelBadge from "../../../components/LevelBadge";
+import { sanitizeContent } from "@/lib/sanitize";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
@@ -96,6 +99,23 @@ export default async function PuzzlePage({
     .update({ views: (puzzle.views || 0) + 1 })
     .eq("id", puzzle.id);
 
+
+
+
+      const authorInfoMap = await getAuthorBadgeMap(supabase, [puzzle.author]);
+  const authorInfo = authorInfoMap[puzzle.author];
+
+  const { count: likeCount } = await supabase
+    .from("puzzle_likes")
+    .select("*", { count: "exact", head: true })
+    .eq("puzzle_id", puzzle.id);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   return (
     <div className="view active" style={{ display: "block" }}>
       <div style={{ marginTop: "15px", marginBottom: "15px" }}>
@@ -139,8 +159,18 @@ export default async function PuzzlePage({
           ❮ 목록으로
         </Link>
       </div>
-
-      <PlayPuzzleClient puzzle={puzzle} />
+      <div className="read-meta-box" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "15px" }}>
+        <div className="read-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {authorInfo ? <LevelBadge level={getLevel(authorInfo.points)} isAdmin={authorInfo.isAdmin} /> : "👤"}
+        </div>
+        <div className="read-meta-text" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span className="read-author" style={{ fontSize: "14px", fontWeight: "bold", color: "#333" }}>{puzzle.author || "익명"}</span>
+          <span className="read-time-views" style={{ fontSize: "12px", color: "#888" }}>
+            {formatDate(puzzle.created_at)} | 조회수 {(puzzle.views || 0) + 1} | 👍 {likeCount || 0}
+          </span>
+        </div>
+      </div>
+      <PlayPuzzleClient puzzle={{ ...puzzle, content: sanitizeContent(puzzle.content) }} />
     </div>
   );
 }

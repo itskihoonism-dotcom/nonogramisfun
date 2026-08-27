@@ -4,8 +4,12 @@ import VoteButtons from "../../../components/VoteButtons";
 import CommentSection from "../../../components/CommentSection";
 import PostActions from "../../../components/PostActions";
 import KakaoAd from "../../../components/KakaoAd";
+import ShareButton from "../../../components/ShareButton";
+import { sanitizeContent } from "@/lib/sanitize";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getAuthorBadgeMap, getLevel } from "@/lib/levelUtils";
+import LevelBadge from "@/components/LevelBadge";
 import { cache } from "react"; // 
 
 const SITE_NAME = "NONOGRAM IS FUN";
@@ -141,6 +145,11 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   // 🌟 현재 유저가 작성자 본인이거나 관리자인지 확인! (Boolean으로 꽉 묶어줍니다)
   const hasPermission = Boolean(isAdmin || (currentUserNickname !== "" && currentUserNickname === post.author));
 
+
+    const authorInfoMap = await getAuthorBadgeMap(supabase, [post.author]);
+  const authorInfo = authorInfoMap[post.author];
+
+
   return (
     <div className="view active">
 
@@ -163,15 +172,17 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       <div className="read-header-area">
         <h1 className="read-title">{post.title}</h1>
         <div className="read-meta-box">
-          <div className="read-avatar">{post.author === "주인장" ? "⚙️" : "👤"}</div>
+          <div className="read-avatar" style={{ background: "none" }}>
+            {authorInfo ? <LevelBadge level={getLevel(authorInfo.points)} isAdmin={authorInfo.isAdmin} /> : (post.author === "주인장" ? "⚙️" : "👤")}
+          </div>
           <div className="read-meta-text">
             <span className="read-author">{post.author}</span>
-            <span className="read-time-views">{formatDate(post.created_at)} | 조회수 {post.views + 1}</span>
+            <span className="read-time-views">{formatDate(post.created_at)} | 조회수 {post.views + 1} | 👍 {post.likes || 0}</span>
           </div>
         </div>
       </div>
       
-      <div className="read-content ql-editor" dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div className="read-content ql-editor" dangerouslySetInnerHTML={{ __html: sanitizeContent(post.content) }} />
 
       {post.image && post.image !== "null" && post.image !== "[]" && (
         <div className="attached-images" style={{ padding: "20px 0", borderTop: "1px dashed #eee", marginTop: "20px", display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -190,8 +201,11 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       )}
 
       <div className="read-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", padding: "15px 0" }}>
-        <VoteButtons postId={post.id} initialLikes={post.likes} initialDislikes={post.dislikes} />
-        
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <VoteButtons postId={post.id} initialLikes={post.likes} initialDislikes={post.dislikes} />
+          <ShareButton title={post.title} url={`${SITE_URL}/community/${post.id}`} />
+        </div>
+
         {/* 🌟 4. PostActions 컴포넌트에 권한(hasPermission)을 전달합니다! */}
         <PostActions postId={post.id} hasPermission={hasPermission} />
       </div>

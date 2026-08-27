@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
+import ShareButton from "./ShareButton";
 
 export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const w = puzzle.width;
@@ -388,6 +389,10 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         #play-area:fullscreen .puzzle-comments-box, #play-area:-webkit-full-screen .puzzle-comments-box {
           display: none !important;
         }
+
+        #play-area:fullscreen .read-content, #play-area:-webkit-full-screen .read-content {
+  display: none !important;
+}
         #play-area:fullscreen .scroll-wrapper, #play-area:-webkit-full-screen .scroll-wrapper {
           max-height: none !important;
           max-width: 100vw !important;
@@ -517,6 +522,11 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         - <b>우클릭:</b> 빈칸임을 표시하는 엑스(X) 마크를 남깁니다.<br/>
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
+
+
+      {puzzle.content && (
+        <div className="read-content" style={{ marginTop: "20px", padding: "20px 0", borderTop: "1px solid #eee" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
+      )}
 
       <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
 
