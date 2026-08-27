@@ -5,6 +5,8 @@ import KakaoAd from "../../../components/KakaoAd";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { getAuthorBadgeMap, getLevel } from "../../../lib/levelUtils";
+import LevelBadge from "../../../components/LevelBadge";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
@@ -18,7 +20,6 @@ const getPuzzle = cache(async (slug: string) => {
     .from("puzzles")
     .select("*")
     .eq("slug", decodeURIComponent(slug))
-    .eq("is_approved", true)
     .single();
   return data;
 });
@@ -74,12 +75,45 @@ export default async function PuzzlePage({
 
   if (!puzzle) notFound();
 
-  // 조회수 +1 (id 기준)
   const supabase = await createClient();
+
+  // 🌟 미승인 퍼즐은 관리자(주인장)만 볼 수 있음
+  if (!puzzle.is_approved) {
+    const { data: { user } } = await supabase.auth.getUser();
+    let isAdmin = false;
+    if (user?.email) {
+      const { data: userData } = await supabase
+        .from("user_ids")
+        .select("nickname, custom_id")
+        .eq("email", user.email)
+        .maybeSingle();
+      isAdmin = userData?.nickname === "주인장" || userData?.custom_id === "admin";
+    }
+    if (!isAdmin) notFound();
+  }
+
+  // 조회수 +1 (id 기준)
   await supabase
     .from("puzzles")
     .update({ views: (puzzle.views || 0) + 1 })
     .eq("id", puzzle.id);
+
+
+
+
+      const authorInfoMap = await getAuthorBadgeMap(supabase, [puzzle.author]);
+  const authorInfo = authorInfoMap[puzzle.author];
+
+  const { count: likeCount } = await supabase
+    .from("puzzle_likes")
+    .select("*", { count: "exact", head: true })
+    .eq("puzzle_id", puzzle.id);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   return (
     <div className="view active" style={{ display: "block" }}>
@@ -124,7 +158,17 @@ export default async function PuzzlePage({
           ❮ 목록으로
         </Link>
       </div>
-
+      <div className="read-meta-box" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "15px" }}>
+        <div className="read-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {authorInfo ? <LevelBadge level={getLevel(authorInfo.points)} isAdmin={authorInfo.isAdmin} /> : "👤"}
+        </div>
+        <div className="read-meta-text" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span className="read-author" style={{ fontSize: "14px", fontWeight: "bold", color: "#333" }}>{puzzle.author || "익명"}</span>
+          <span className="read-time-views" style={{ fontSize: "12px", color: "#888" }}>
+            {formatDate(puzzle.created_at)} | 조회수 {(puzzle.views || 0) + 1} | 👍 {likeCount || 0}
+          </span>
+        </div>
+      </div>
       <PlayPuzzleClient puzzle={puzzle} />
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
 import KakaoAd from "../../components/KakaoAd";
+import TiptapEditor from "../../components/TiptapEditor";
 import { makeSlug } from "@/lib/slug";
 
 
@@ -24,6 +25,8 @@ export default function MakePuzzlePage() {
   const [userGrid, setUserGrid] = useState<number[]>([]);
   const [zoomFactor, setZoomFactor] = useState(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false); // 🌟 전체화면 상태
+  const [content, setContent] = useState("");
+    const [isHtmlMode, setIsHtmlMode] = useState(false);
 
   // 드래그 상태 추적용
   const dragInfo = useRef({
@@ -33,6 +36,12 @@ export default function MakePuzzlePage() {
     axis: null as "row" | "col" | null, // 🌟 툴팁 계산을 위한 축(방향) 추가
     initialGrid: [] as number[],
   });
+
+  // 🌟 최신 userGrid를 항상 담아두는 캡슐 (터치 네이티브 리스너가 오래된 값을 보지 않도록)
+  const stateRef = useRef({ userGrid: [] as number[] });
+  useEffect(() => {
+    stateRef.current = { userGrid };
+  }, [userGrid]);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const playAreaRef = useRef<HTMLDivElement>(null); // 🌟 전체화면 영역 이름표
@@ -73,20 +82,71 @@ export default function MakePuzzlePage() {
     };
   }, []);
 
-  // 모바일 드래그 시 스크롤 차단 엔진
+    // 모바일: 손가락 1개 = 칠하기, 손가락 2개 이상 = 우리가 직접 스크롤 이동시킴
   useEffect(() => {
     const gridEl = gridRef.current;
     if (!gridEl) return;
 
-    const preventScrollOnDrag = (e: TouchEvent) => {
-      if (dragInfo.current.isDragging) {
-        e.preventDefault(); 
+    let twoFingerMid: { x: number; y: number } | null = null;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      console.log("touchstart 발생! 손가락 수:", e.touches.length);
+      if (e.touches.length > 1) {
+        if (dragInfo.current.isDragging) {
+          setUserGrid([...dragInfo.current.initialGrid]); // 찰나에 칠해진 것 되돌리기
+        }
+        dragInfo.current.isDragging = false;
+        if (tooltipRef.current) tooltipRef.current.style.display = "none";
+        const t0 = e.touches[0], t1 = e.touches[1];
+        twoFingerMid = { x: (t0.clientX + t1.clientX) / 2, y: (t0.clientY + t1.clientY) / 2 };
+        return;
+      }
+
+      twoFingerMid = null;
+      const touch = e.touches[0];
+      const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+      if (!targetCell || !targetCell.dataset.index) return;
+
+      e.preventDefault();
+      handlePointerDown(parseInt(targetCell.dataset.index, 10), e);
+    };
+
+    const handleTouchMoveNative = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        dragInfo.current.isDragging = false;
+        e.preventDefault();
+        if (twoFingerMid) {
+          const t0 = e.touches[0], t1 = e.touches[1];
+          const midX = (t0.clientX + t1.clientX) / 2;
+          const midY = (t0.clientY + t1.clientY) / 2;
+          gridEl.scrollLeft -= (midX - twoFingerMid.x);
+          gridEl.scrollTop -= (midY - twoFingerMid.y);
+          twoFingerMid = { x: midX, y: midY };
+        }
+        return;
+      }
+      if (!dragInfo.current.isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+      if (targetCell && targetCell.dataset.index) {
+        applyLineDrag(parseInt(targetCell.dataset.index, 10), touch.clientX, touch.clientY);
       }
     };
 
-    gridEl.addEventListener("touchmove", preventScrollOnDrag, { passive: false });
-    return () => gridEl.removeEventListener("touchmove", preventScrollOnDrag);
-  }, []);
+    const handleTouchEnd = () => { twoFingerMid = null; };
+
+    gridEl.addEventListener("touchstart", handleTouchStart, { passive: false });
+    gridEl.addEventListener("touchmove", handleTouchMoveNative, { passive: false });
+    gridEl.addEventListener("touchend", handleTouchEnd);
+    gridEl.addEventListener("touchcancel", handleTouchEnd);
+    return () => {
+      gridEl.removeEventListener("touchstart", handleTouchStart);
+      gridEl.removeEventListener("touchmove", handleTouchMoveNative);
+      gridEl.removeEventListener("touchend", handleTouchEnd);
+      gridEl.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [isModalOpen]);
 
   // 🌟 마우스 떼면 드래그 종료 및 툴팁 숨김
   useEffect(() => {
@@ -178,14 +238,16 @@ export default function MakePuzzlePage() {
   };
 
   const handlePointerDown = (index: number, e: any) => {
+    if (e.pointerType === "touch") return; // 터치는 아래 useEffect의 네이티브 리스너가 전담 처리
     e.preventDefault();
-    const isFilled = userGrid[index] === 1;
+    const currentGrid = stateRef.current.userGrid;
+    const isFilled = currentGrid[index] === 1;
     const action = isFilled ? 0 : 1; 
     
     // 축(axis)을 null로 초기화하여 새 방향을 잡도록 준비
-    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid] };
+    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...currentGrid] };
     
-    const newGrid = [...userGrid];
+    const newGrid = [...currentGrid];
     newGrid[index] = action;
     setUserGrid(newGrid);
   };
@@ -195,14 +257,7 @@ export default function MakePuzzlePage() {
     applyLineDrag(index, e.clientX, e.clientY);
   };
 
-  const handleTouchMove = (e: any) => {
-    if (!dragInfo.current.isDragging) return;
-    const touch = e.touches[0];
-    const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
-    if (targetCell && targetCell.dataset.index) {
-      applyLineDrag(parseInt(targetCell.dataset.index, 10), touch.clientX, touch.clientY);
-    }
-  };
+
 
   // 🌟 전체화면 토글 함수
   const toggleFullScreen = () => {
@@ -268,7 +323,9 @@ export default function MakePuzzlePage() {
           is_approved: currentUser.isAdmin, 
           views: 0,
           author: currentUser.nickname,
-          slug
+          slug,
+          content,
+          is_html_mode: isHtmlMode
       }]);
 
       // 유니크 제약 위반이면 번호를 올려 재시도
@@ -379,7 +436,7 @@ export default function MakePuzzlePage() {
           </div>
 
           {/* 스크롤 및 모바일 방지 영역 */}
-          <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }} onTouchMove={handleTouchMove} onContextMenu={(e) => e.preventDefault()}>
+                    <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }} onContextMenu={(e) => e.preventDefault()}>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${currentWidth}, ${cellSize}px)`, gridTemplateRows: `repeat(${currentHeight}, ${cellSize}px)`, width: "max-content", border: "2px solid #333", backgroundColor: "white" }}>
               {userGrid.map((cellState, index) => {
                 const r = Math.floor(index / currentWidth);
@@ -387,13 +444,13 @@ export default function MakePuzzlePage() {
                 const isThickRight = (c + 1) % 5 === 0 && c !== currentWidth - 1;
                 const isThickBottom = (r + 1) % 5 === 0 && r !== currentHeight - 1;
                 return (
-                  <div 
+                    <div 
                     key={index}
                     data-index={index}
                     onMouseDown={(e) => handlePointerDown(index, e)}
                     onMouseEnter={(e) => handlePointerEnter(index, e)}
-                    onTouchStart={(e) => handlePointerDown(index, e)}
                     style={{
+                      touchAction: "none",
                       width: cellSize, height: cellSize, minWidth: cellSize, minHeight: cellSize, boxSizing: "border-box", border: "1px solid #ccc",
                       borderRight: isThickRight ? "3px solid #333" : "1px solid #ccc",
                       borderBottom: isThickBottom ? "3px solid #333" : "1px solid #ccc",
@@ -406,7 +463,25 @@ export default function MakePuzzlePage() {
             </div>
           </div>
           
-          {/* 하단 저장 버튼 그룹 */}
+          <div style={{ marginTop: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "bold" }}>📝 그림 설명 (선택사항)</label>
+              <label style={{ fontSize: "13px", color: "#555", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                <input type="checkbox" checked={isHtmlMode} onChange={(e) => setIsHtmlMode(e.target.checked)} />
+                HTML 모드
+              </label>
+            </div>
+            {isHtmlMode ? (
+              <textarea
+                style={{ width: "100%", height: "300px", fontFamily: "monospace", fontSize: "14px", background: "#222", color: "#0f0", boxSizing: "border-box", padding: "14px", border: "1px solid #ddd", borderRadius: "6px" }}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            ) : (
+              <TiptapEditor content={content} onChange={setContent} />
+            )}
+          </div>
+
           <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={saveMakerProgress} style={{ padding: "10px 20px", fontSize: "15px", cursor: "pointer", backgroundColor: "#FF9800", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}>💾 임시저장</button>
             <button onClick={loadMakerProgress} style={{ padding: "10px 20px", fontSize: "15px", cursor: "pointer", backgroundColor: "#9C27B0", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}>📂 불러오기</button>

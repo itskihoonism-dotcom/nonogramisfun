@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import AuthorBadge from "./AuthorBadge";
 
 export default function CommentSection({ postId, initialComments, commentCount }: { postId: number, initialComments: any[], commentCount: number }) {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function CommentSection({ postId, initialComments, commentCount }
   const [replyContent, setReplyContent] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [authorInfo, setAuthorInfo] = useState<Record<string, { points: number; isAdmin: boolean }>>({});
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,6 +28,26 @@ export default function CommentSection({ postId, initialComments, commentCount }
     };
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    const fetchAuthorBadges = async () => {
+      const authors = Array.from(new Set(initialComments.map(c => c.author).filter(Boolean)));
+      if (authors.length === 0) return;
+
+      const { data } = await supabase.from("user_ids").select("nickname, points, custom_id").in("nickname", authors);
+            console.log("작성자 뱃지 조회 결과:", authors, data);
+      if (!data) return;
+
+      const map: Record<string, { points: number; isAdmin: boolean }> = {};
+      data.forEach((u: any) => {
+        map[u.nickname] = { points: u.points || 0, isAdmin: u.nickname === "주인장" || u.custom_id === "admin" };
+      });
+      setAuthorInfo(map);
+    };
+    fetchAuthorBadges();
+  }, [initialComments]);
+
+
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
@@ -125,8 +147,8 @@ export default function CommentSection({ postId, initialComments, commentCount }
         {parentComments.map((comment) => (
           <li key={comment.id} style={{ marginBottom: "20px", borderBottom: "1px solid #eee", paddingBottom: "15px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "14px", fontWeight: "bold" }}>{comment.author === "주인장" ? "⚙️" : "👤"} {comment.author}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}><AuthorBadge author={comment.author} info={authorInfo[comment.author]} /></span>
                 <span style={{ fontSize: "12px", color: "#888" }}>{formatDate(comment.created_at)}</span>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
@@ -161,18 +183,32 @@ export default function CommentSection({ postId, initialComments, commentCount }
               <div key={reply.id} style={{ background: "#f8f9fa", padding: "12px 15px", borderRadius: "6px", marginTop: "10px", marginLeft: "20px", position: "relative" }}>
                 <div style={{ position: "absolute", left: "-15px", top: "15px", color: "#ccc", borderLeft: "2px solid #ddd", borderBottom: "2px solid #ddd", width: "10px", height: "10px" }}></div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: "bold" }}>{reply.author === "주인장" ? "⚙️" : "👤"} {reply.author}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "bold" }}><AuthorBadge author={reply.author} info={authorInfo[reply.author]} /></span>
                     <span style={{ fontSize: "11px", color: "#888" }}>{formatDate(reply.created_at)}</span>
                   </div>
-{currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
-                  <>
-                    <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
-                    <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
-                  </>
-                )}
+                  {currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
+                      <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
+                {editingCommentId === reply.id ? (
+                  <div style={{ marginTop: "8px" }}>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      style={{ width: "100%", height: "50px", padding: "8px", fontSize: "13px", border: "1px solid #ddd", borderRadius: "4px", resize: "none", marginBottom: "8px" }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "5px" }}>
+                      <button onClick={() => handleUpdate(reply.id)} style={{ padding: "4px 12px", backgroundColor: "#4CAF50", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>저장</button>
+                      <button onClick={() => setEditingCommentId(null)} style={{ padding: "4px 12px", backgroundColor: "#999", color: "#fff", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}>취소</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
+                )}
               </div>
             ))}
 

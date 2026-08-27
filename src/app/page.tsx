@@ -2,6 +2,8 @@ import { createClient } from "../lib/supabaseServer";
 import Link from "next/link";
 import MainClientArea from "../components/MainClientArea";
 import KakaoAd from "../components/KakaoAd";
+import { getAuthorBadgeMap, getLevel } from "../lib/levelUtils";
+import LevelBadge from "../components/LevelBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +34,14 @@ export default async function HomePage() {
       .limit(6),
     supabase
       .from('community_posts')
-      .select('id, title, author, category, created_at, comments')
+      .select('id, title, author, category, created_at, comments, views')
       .order('created_at', { ascending: false })
       .limit(6)
   ]);
 
   const pData = puzzlesRes.data || [];
   const cData = commRes.data || [];
+    const authorInfoMap = await getAuthorBadgeMap(supabase, [...pData.map((p) => p.author), ...cData.map((c) => c.author)]);
 
   return (
     <div className="view active" style={{ display: "block", minHeight: "100vh" }}>
@@ -62,7 +65,7 @@ export default async function HomePage() {
       <div className="home-split-layout" style={{ display: "flex", gap: "25px", width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>
         
         {/* 🧩 1. 퍼즐 목록 (왼쪽) */}
-        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, width: "100%", display: "flex", flexDirection: "column" }}>
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", margin: "0 0 10px 0", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
             <h2 style={{ margin: 0, fontSize: "18px", color: "#111" }}>퍼즐 목록</h2>
             <Link href="/all-puzzles" style={{ background: "none", fontSize: "14px", border: "none", color: "#2196F3", fontWeight: "bold", cursor: "pointer", textDecoration: "none" }}>전체보기 ➡️</Link>
@@ -81,8 +84,10 @@ export default async function HomePage() {
                         {isNew(p.created_at) && <span style={{ backgroundColor: "#ff5722", color: "white", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "3px", marginRight: "6px", verticalAlign: "middle" }}>N</span>}
                         {p.title} <span style={{ fontWeight: "normal", fontSize: "13px", color: "#666" }}>({p.width}x{p.height})</span>
                       </span>
-                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}>
-                        {formatDate(p.created_at)} | 👤 {p.author || '익명'} | 조회 {p.views || 0}
+                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                        <span>{formatDate(p.created_at)} |</span>
+                        {authorInfoMap[p.author] && <LevelBadge level={getLevel(authorInfoMap[p.author].points)} isAdmin={authorInfoMap[p.author].isAdmin} size="sm" />}
+                        <span>{p.author || '익명'} | 조회 {p.views || 0}</span>
                       </span>
                     </div>
                     
@@ -94,7 +99,7 @@ export default async function HomePage() {
         </div>
 
         {/* 💬 2. 커뮤니티 목록 (오른쪽) */}
-        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div className="home-split-column" style={{ flex: "1 1 300px", minWidth: 0, width: "100%", display: "flex", flexDirection: "column" }}>
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", margin: "0 0 10px 0", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
             <h2 style={{ margin: 0, fontSize: "18px", color: "#111" }}>커뮤니티 최신 글</h2>
             <Link href="/community" style={{ background: "none", border: "none", fontSize: "14px", color: "#2196F3", fontWeight: "bold", cursor: "pointer", textDecoration: "none" }}>전체보기 ➡️</Link>
@@ -104,16 +109,18 @@ export default async function HomePage() {
               <li style={{ background: "#fff", marginBottom: "8px", padding: "15px", borderRadius: "6px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid #e0e0e0", color: "#999" }}>게시글이 없습니다.</li>
             ) : (
               cData.map(c => (
-                <li key={c.id} style={{ background: "#fff", marginBottom: "8px", padding: 0, borderRadius: "6px", display: "flex", border: "1px solid #e0e0e0", transition: "background 0.2s" }}>
-                  <Link href={`/community/${c.id}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0 }}>
-                    <div className="puzzle-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", minWidth: 0, flex: 1, paddingRight: "10px" }}>
-                      <span className="puzzle-title" style={{ fontSize: "13px", fontWeight: "bold", color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <li key={c.id} style={{ background: "#fff", marginBottom: "8px", padding: 0, borderRadius: "6px", display: "flex", border: "1px solid #e0e0e0", transition: "background 0.2s", width: "100%", boxSizing: "border-box", overflow: "hidden" }}>
+                  <Link href={`/community/${c.id}`} style={{ display: "flex", flex: 1, justifyContent: "space-between", alignItems: "center", padding: "15px", textDecoration: "none", color: "inherit", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+                    <div className="puzzle-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", minWidth: 0, width: "100%", flex: 1, paddingRight: "10px" }}>
+                      <span className="puzzle-title" style={{ display: "block", width: "100%", fontSize: "13px", fontWeight: "bold", color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         <span style={{ color: "#9c27b0", fontSize: "12px", marginRight: "4px" }}>[{c.category}]</span>
                         {c.title}
                         {c.comments > 0 && <span style={{ color: "#ff5722", fontWeight: "bold", fontSize: "12px", marginLeft: "4px" }}>[{c.comments}]</span>}
                       </span>
-                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}>
-                        {formatDate(c.created_at)} | {c.author}
+                      <span className="puzzle-date" style={{ fontSize: "12px", color: "#888", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                        <span>{formatDate(c.created_at)} |</span>
+                        {authorInfoMap[c.author] && <LevelBadge level={getLevel(authorInfoMap[c.author].points)} isAdmin={authorInfoMap[c.author].isAdmin} size="sm" />}
+                                                <span>{c.author} | 조회 {c.views || 0}</span>
                       </span>
                     </div>
                   </Link>

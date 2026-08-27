@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
+import ShareButton from "./ShareButton";
 
 export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const w = puzzle.width;
@@ -49,16 +50,72 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // 모바일 드래그 시 스크롤 차단
+      // 모바일: 손가락 1개 = 칠하기, 손가락 2개 이상 = 우리가 직접 스크롤 이동시킴
   useEffect(() => {
     const gridEl = gridRef.current;
     if (!gridEl) return;
-    const preventScroll = (e: TouchEvent) => {
-      if (dragInfo.current.isDragging && !isGameCleared) e.preventDefault(); 
+
+    let twoFingerMid: { x: number; y: number } | null = null;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (stateRef.current.isGameCleared) return;
+
+      if (e.touches.length > 1) {
+        if (dragInfo.current.isDragging) {
+          setUserGrid([...dragInfo.current.initialGrid]); // 찰나에 칠해진 것 되돌리기
+        }
+        dragInfo.current.isDragging = false;
+        if (tooltipRef.current) tooltipRef.current.style.display = "none";
+        const t0 = e.touches[0], t1 = e.touches[1];
+        twoFingerMid = { x: (t0.clientX + t1.clientX) / 2, y: (t0.clientY + t1.clientY) / 2 };
+        return;
+      }
+
+      twoFingerMid = null;
+      const touch = e.touches[0];
+      const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+      if (!targetCell || !targetCell.dataset.index) return;
+
+      e.preventDefault();
+      handlePointerDown(parseInt(targetCell.dataset.index, 10), e);
     };
-    gridEl.addEventListener("touchmove", preventScroll, { passive: false });
-    return () => gridEl.removeEventListener("touchmove", preventScroll);
-  }, [isGameCleared]);
+
+    const handleTouchMoveNative = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        dragInfo.current.isDragging = false;
+        e.preventDefault();
+        if (twoFingerMid) {
+          const t0 = e.touches[0], t1 = e.touches[1];
+          const midX = (t0.clientX + t1.clientX) / 2;
+          const midY = (t0.clientY + t1.clientY) / 2;
+          gridEl.scrollLeft -= (midX - twoFingerMid.x);
+          gridEl.scrollTop -= (midY - twoFingerMid.y);
+          twoFingerMid = { x: midX, y: midY };
+        }
+        return;
+      }
+      if (!dragInfo.current.isDragging || stateRef.current.isGameCleared) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+      if (targetCell && targetCell.dataset.index) {
+        applyLineDrag(parseInt(targetCell.dataset.index, 10), touch.clientX, touch.clientY);
+      }
+    };
+
+    const handleTouchEnd = () => { twoFingerMid = null; };
+
+    gridEl.addEventListener("touchstart", handleTouchStart, { passive: false });
+    gridEl.addEventListener("touchmove", handleTouchMoveNative, { passive: false });
+    gridEl.addEventListener("touchend", handleTouchEnd);
+    gridEl.addEventListener("touchcancel", handleTouchEnd);
+    return () => {
+      gridEl.removeEventListener("touchstart", handleTouchStart);
+      gridEl.removeEventListener("touchmove", handleTouchMoveNative);
+      gridEl.removeEventListener("touchend", handleTouchEnd);
+      gridEl.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, []);
 
   const hints = useMemo(() => {
     let rowHints = [], colHints = [];
@@ -206,15 +263,17 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     }
   };
 
-  const handlePointerDown = (index: number, e: any) => {
-    if (isGameCleared) return;
+   const handlePointerDown = (index: number, e: any) => {
+    if (stateRef.current.isGameCleared) return;
+    if (e.pointerType === "touch") return; // 터치는 아래 useEffect의 네이티브 리스너가 전담 처리
     e.preventDefault();
     const isRightClick = e.button === 2 || e.type === "contextmenu";
-    const cellState = userGrid[index];
+    const currentGrid = stateRef.current.userGrid;
+    const cellState = currentGrid[index];
     const action = isRightClick ? (cellState === 2 ? 0 : 2) : (cellState === 0 ? 1 : cellState === 1 ? 2 : 0);
     
-    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true };
-    const newGrid = [...userGrid];
+    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...currentGrid], hasChanged: true };
+    const newGrid = [...currentGrid];
     newGrid[index] = action;
     setUserGrid(newGrid);
 
@@ -239,15 +298,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     applyLineDrag(index, e.clientX, e.clientY);
   };
 
-  const handleTouchMove = (e: any) => {
-    if (!dragInfo.current.isDragging || isGameCleared) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
-    if (targetCell && targetCell.dataset.index) {
-      applyLineDrag(parseInt(targetCell.dataset.index), touch.clientX, touch.clientY);
-    }
-  };
+
 
   // 🌟 가장 깨끗하고 완벽한 마우스 해제 로직
   const handleGlobalUp = () => {
@@ -335,6 +386,9 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         #play-area:fullscreen .seo-guide-box, #play-area:-webkit-full-screen .seo-guide-box {
           display: none !important;
         }
+        #play-area:fullscreen .puzzle-comments-box, #play-area:-webkit-full-screen .puzzle-comments-box {
+          display: none !important;
+        }
         #play-area:fullscreen .scroll-wrapper, #play-area:-webkit-full-screen .scroll-wrapper {
           max-height: none !important;
           max-width: 100vw !important;
@@ -364,29 +418,31 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           transform: translate(15px, -35px);
           white-space: nowrap;
         }
+        #play-area:fullscreen .toolbar-bar, #play-area:-webkit-full-screen .toolbar-bar {
+          display: flex !important; /* 🌟 전체화면에서도 버튼들이 한 줄에 나오도록 flex 유지 */
+          flex-wrap: nowrap !important;
+        }
+        @media (max-width: 480px) {
+  .toolbar-bar button { padding: 6px 8px !important; font-size: 13px !important; }
+  .toolbar-bar .btn-label { display: none; }
+}  
       `}</style>
 
-      {/* 🌟 툴팁 코드를 다시 내부로 복구했습니다 */}
       <div id="drag-count-tooltip" ref={tooltipRef} className="drag-tooltip">1</div>
       
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px", marginBottom: "15px" }}>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #ddd" }}>
-          <span style={{ fontSize: "14px", fontWeight: "bold" }}>🔎 줌: </span>
-          <button onClick={() => setZoomFactor(z => Math.min(3.0, z + 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>+</button>
-          <button onClick={() => setZoomFactor(z => Math.max(0.2, z - 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>-</button>
-          <button onClick={() => setZoomFactor(1.0)} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>기본</button>
-          <button onClick={toggleFullScreen} style={{ marginLeft: "10px", padding: "4px 10px", fontWeight: "bold", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>⛶ 전체화면</button>
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px" }}>
-          <button onClick={undo} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↩ 취소</button>
-          <button onClick={redo} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↪ 다시</button>
-          <button onClick={saveProgress} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#FF9800" }}>💾 임시저장</button>
-          <button onClick={loadProgress} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#9C27B0" }}>📂 불러오기</button>
-        </div>
+       <div className="toolbar-bar" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "15px", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #ddd" }}>
+        <span style={{ fontSize: "14px", fontWeight: "bold" }}>🔎  </span>
+        <button onClick={() => setZoomFactor(z => Math.min(3.0, z + 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>+</button>
+        <button onClick={() => setZoomFactor(z => Math.max(0.2, z - 0.2))} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>-</button>
+        <button onClick={() => setZoomFactor(1.0)} style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #bbb", background: "#fff", borderRadius: "4px", cursor: "pointer" }}>기본</button>
+        <button onClick={toggleFullScreen} title="전체화면" style={{ marginLeft: "10px", padding: "4px 10px", fontWeight: "bold", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>⛶ <span className="btn-label">전체화면</span></button>
+        <button onClick={undo} title="취소" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↩ <span className="btn-label">취소</span></button>
+        <button onClick={redo} title="다시" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↪ <span className="btn-label">다시</span></button>
+        <button onClick={saveProgress} title="임시저장" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#FF9800" }}>💾 <span className="btn-label">임시저장</span></button>
+        <button onClick={loadProgress} title="불러오기" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#9C27B0" }}>📂 <span className="btn-label">불러오기</span></button>
       </div>
 
-      <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }} onTouchMove={handleTouchMove}>
+            <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }}>
         <div style={{ display: "grid", gridTemplateColumns: `auto max-content`, gridTemplateRows: `auto max-content`, width: "max-content", border: "3px solid #111", backgroundColor: "#e4e4e4" }}>
           <div style={{ borderRight: "3px solid #111", borderBottom: "3px solid #111" }}></div>
           
@@ -427,13 +483,14 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
               const isThickRight = (c + 1) % 5 === 0 && c !== w - 1;
               const isThickBottom = (r + 1) % 5 === 0 && r !== h - 1;
               return (
-                <div 
+                                <div 
                   key={index}
                   data-index={index}
                   className="cell"
                   onPointerDown={(e) => handlePointerDown(index, e)}
                   onPointerEnter={(e) => handlePointerEnter(index, e)}
                   style={{
+                    
                     width: cellSize, height: cellSize, boxSizing: "border-box", border: "1px solid #ccc",
                     borderRight: isThickRight ? "3px solid #333" : "1px solid #ccc",
                     borderBottom: isThickBottom ? "3px solid #333" : "1px solid #ccc",
@@ -461,6 +518,11 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         - <b>우클릭:</b> 빈칸임을 표시하는 엑스(X) 마크를 남깁니다.<br/>
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
+
+
+      {puzzle.content && (
+        <div className="read-content" style={{ marginTop: "20px", padding: "20px 0", borderTop: "1px solid #eee" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
+      )}
 
       <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
 
