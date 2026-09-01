@@ -61,7 +61,8 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
   // 🌟 24시간 이내 작성글은 'N시간 전' / 'N분 전'으로 표시하는 기능 추가!
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
+    const isoString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+    const d = new Date(isoString);
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -125,8 +126,8 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
             </div>
           </div>
           
-          <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-           <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
+          <div className="col-author">
+            <AuthorBadge author={post.author} info={authorInfoMap[post.author]} />
           </div>
           <div className="col-date">{formatDate(post.created_at)}</div>
           <div className="col-views">{post.views || 0}</div>

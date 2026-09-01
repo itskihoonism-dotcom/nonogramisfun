@@ -5,6 +5,7 @@ import CommentSection from "../../../components/CommentSection";
 import PostActions from "../../../components/PostActions";
 import KakaoAd from "../../../components/KakaoAd";
 import ShareButton from "../../../components/ShareButton";
+import { sanitizeContent } from "@/lib/sanitize";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAuthorBadgeMap, getLevel } from "@/lib/levelUtils";
@@ -181,7 +182,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
       
-      <div className="read-content ql-editor" dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div className="read-content ql-editor" dangerouslySetInnerHTML={{ __html: sanitizeContent(post.content) }} />
 
       {post.image && post.image !== "null" && post.image !== "[]" && (
         <div className="attached-images" style={{ padding: "20px 0", borderTop: "1px dashed #eee", marginTop: "20px", display: "flex", flexDirection: "column", gap: "15px" }}>

@@ -135,7 +135,7 @@ export default async function HomePage() {
       {/* 🧩 3. 하단 SEO 설명 텍스트 영역 */}
       <div className="seo-content-box" style={{ marginTop: "40px", padding: "20px", background: "#f9f9f9", borderRadius: "8px", border: "1px solid #eee", fontSize: "14px", lineHeight: "1.6", color: "#444" }}>
         <h3 style={{ marginTop: 0, color: "#222", fontSize: "16px", borderBottom: "2px solid #ddd", paddingBottom: "8px" }}>🧩 노노그램(네모로직)이란 무엇인가요?</h3>
-        <p>노노그램(Nonogram)은 가로와 세로 축에 적힌 숫자를 힌트 삼아 숨겨진 픽셀 아트를 완성하는 매력적인 논리 퍼즐입니다. 네모로직, 피크로스(Picross), 그리들러(Griddlers) 등 다양한 이름으로 불리며 전 세계적으로 사랑받고 있습니다. 논리적 추론과 공간 지각 능력을 활용해야 하므로, 두뇌 발달은 물론 성인들의 치매 예방과 집중력 향상에도 큰 도움을 줍니다.</p>
+        <p>노노그램(Nonogram)은 가로와 세로 축에 적힌 숫자를 힌트 삼아 숨겨진 픽셀 아트를 완성하는 매력적인 논리 퍼즐입니다. 네모로직, 피크로스(Picross), 그리들러(Griddlers) 등 다양한 이름으로 불리며 전 세계적으로 사랑받고 있습니다. 논리적 추론과 공간 지각 능력을 활용해 한 칸씩 채워나가다 보면, 마지막에 드러나는 그림이 특별한 성취감을 안겨줍니다.</p>
         <h3 style={{ marginTop: "20px", color: "#222", fontSize: "16px", borderBottom: "2px solid #ddd", paddingBottom: "8px" }}>💡 노노그램 기본 규칙 및 풀이 방법</h3>
         <p style={{ margin: 0 }}><strong>1. 숫자의 의미:</strong> 각 행과 열에 있는 숫자는 연속으로 칠해져야 하는 칸의 개수를 나타냅니다.<br/><strong>2. 공백의 규칙:</strong> 숫자가 여러 개 있을 경우(예: 3 2), 3칸을 칠하고 최소 1칸 이상의 빈칸을 띄운 다음 2칸을 칠해야 합니다.<br/><strong>3. 엑스(X) 표시 활용:</strong> 절대 칠해질 수 없는 칸이나 빈칸으로 확정된 곳에는 'X' 표시를 해두면 큰 도움이 됩니다.<br/><strong>4. 교차점 찾기:</strong> 가로 힌트와 세로 힌트가 만나는 확실한 교차점부터 시작해보세요.</p>
       </div>

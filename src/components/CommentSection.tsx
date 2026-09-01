@@ -55,6 +55,20 @@ export default function CommentSection({ postId, initialComments, commentCount }
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
 
+  const renderContentWithMention = (content: string) => {
+    const match = content.match(/^(@\S+)\s?/);
+    if (!match) return content;
+    const mention = match[1];
+    const rest = content.slice(match[0].length);
+    return (
+      <>
+        <span style={{ color: "#2196F3", fontWeight: "bold" }}>{mention}</span>{" "}
+        {rest}
+      </>
+    );
+  };
+
+
   // 🌟 [핵심 해결책] DB에 남은 진짜 댓글 갯수를 다시 세어서 업데이트하는 만능 함수!
   const syncCommentCount = async () => {
     const { count } = await supabase
@@ -152,7 +166,17 @@ export default function CommentSection({ postId, initialComments, commentCount }
                 <span style={{ fontSize: "12px", color: "#888" }}>{formatDate(comment.created_at)}</span>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} style={{ background: "none", border: "none", color: "#888", fontSize: "12px", cursor: "pointer", padding: 0 }}>
+                <button
+                  onClick={() => {
+                    if (replyingTo === comment.id) {
+                      setReplyingTo(null);
+                    } else {
+                      setReplyingTo(comment.id);
+                      setReplyContent(`@${comment.author} `);
+                    }
+                  }}
+                  style={{ background: "none", border: "none", color: "#888", fontSize: "12px", cursor: "pointer", padding: 0 }}
+                >
                   {replyingTo === comment.id ? "취소" : "답글달기"}
                 </button>
 {currentUser && (currentUser.nickname === comment.author || currentUser.isAdmin) && (
@@ -187,12 +211,27 @@ export default function CommentSection({ postId, initialComments, commentCount }
                     <span style={{ fontSize: "13px", fontWeight: "bold" }}><AuthorBadge author={reply.author} info={authorInfo[reply.author]} /></span>
                     <span style={{ fontSize: "11px", color: "#888" }}>{formatDate(reply.created_at)}</span>
                   </div>
-                  {currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
-                      <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
-                    </div>
-                  )}
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      onClick={() => {
+                        if (replyingTo === comment.id) {
+                          setReplyingTo(null);
+                        } else {
+                          setReplyingTo(comment.id);
+                          setReplyContent(`@${reply.author} `);
+                        }
+                      }}
+                      style={{ background: "none", border: "none", color: "#888", fontSize: "12px", cursor: "pointer", padding: 0 }}
+                    >
+                      {replyingTo === comment.id ? "취소" : "답글달기"}
+                    </button>
+                    {currentUser && (currentUser.nickname === reply.author || currentUser.isAdmin) && (
+                      <>
+                        <button onClick={() => handleEditClick(reply.id, reply.content)} style={{ background: "none", border: "none", color: "#2196F3", fontSize: "12px", cursor: "pointer", padding: 0 }}>수정</button>
+                        <button onClick={() => handleDelete(reply.id)} style={{ background: "none", border: "none", color: "#f44336", fontSize: "12px", cursor: "pointer", padding: 0 }}>삭제</button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 {editingCommentId === reply.id ? (
                   <div style={{ marginTop: "8px" }}>
@@ -207,7 +246,7 @@ export default function CommentSection({ postId, initialComments, commentCount }
                     </div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{reply.content}</div>
+                  <div style={{ fontSize: "13px", lineHeight: 1.5, color: "#444" }}>{renderContentWithMention(reply.content)}</div>
                 )}
               </div>
             ))}

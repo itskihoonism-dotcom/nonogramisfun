@@ -4,6 +4,7 @@ import Link from "next/link";
 import NoticeCommentSection from "../../../components/NoticeCommentSection";
 import { notFound } from "next/navigation";
 import LevelBadge from "../../../components/LevelBadge";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="read-content" dangerouslySetInnerHTML={{ __html: notice.content }} />
+      <div className="read-content" dangerouslySetInnerHTML={{ __html: sanitizeContent(notice.content) }} />
 
       {isAdmin && (
         <div className="read-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", borderBottom: "1px solid #eee", padding: "15px 0" }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import { useMobileMenu } from "./MobileMenuContext";
@@ -18,6 +18,11 @@ export default function Sidebar({
   // 🌟 서버에서 이미 받아온 정보로 초기값을 채우므로 로딩/깜빡임이 완전히 사라집니다!
   const [userInfo, setUserInfo] = useState(initialUser);
   const notices = initialNotices;
+
+  // 🌟 router.refresh() 등으로 서버가 새 initialUser를 내려주면 사이드바도 즉시 반영
+  useEffect(() => {
+    setUserInfo(initialUser);
+  }, [initialUser]);
 
   // 모달창 상태
   const [showSignup, setShowSignup] = useState(false);
@@ -51,16 +56,13 @@ export default function Sidebar({
   const handleLogin = async () => {
     if (!loginId || !loginPw) return alert("아이디와 비밀번호를 입력해주세요.");
     try {
-      const { data, error: searchError } = await supabase
-        .from("user_ids")
-        .select("email")
-        .eq("custom_id", loginId)
-        .maybeSingle();
+      const { data: foundEmail, error: searchError } = await supabase
+        .rpc("get_email_by_custom_id", { p_custom_id: loginId });
 
-      if (searchError || !data) return alert("존재하지 않는 아이디입니다.");
+      if (searchError || !foundEmail) return alert("존재하지 않는 아이디입니다.");
 
       const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: data.email,
+        email: foundEmail,
         password: loginPw,
       });
 
@@ -131,8 +133,8 @@ export default function Sidebar({
   const handleFindId = async () => {
     const email = prompt("가입 시 등록하신 이메일 주소를 입력해 주세요.");
     if (!email) return;
-    const { data } = await supabase.from("user_ids").select("custom_id").eq("email", email.trim()).maybeSingle();
-    if (data?.custom_id) alert(`회원님의 아이디는 [ ${data.custom_id} ] 입니다.`);
+    const { data: foundCustomId } = await supabase.rpc("get_custom_id_by_email", { p_email: email.trim() });
+    if (foundCustomId) alert(`회원님의 아이디는 [ ${foundCustomId} ] 입니다.`);
     else alert("해당 이메일로 가입된 아이디를 찾을 수 없습니다.");
   };
 

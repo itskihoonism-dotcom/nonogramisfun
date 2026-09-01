@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
+import { getHint, HintResult } from "../lib/hint";
 import ShareButton from "./ShareButton";
 
 export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
@@ -18,6 +19,12 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const [zoomFactor, setZoomFactor] = useState(1.0);
   const [crossedHints, setCrossedHints] = useState<{ [key: string]: boolean }>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hintUsedCount, setHintUsedCount] = useState(0);
+
+  const [hintCells, setHintCells] = useState<number[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hoverRow, setHoverRow] = useState<number | null>(null);
+  const [hoverCol, setHoverCol] = useState<number | null>(null);
 
   // 🌟 최신 상태 보관 캡슐
   const stateRef = useRef({ history, historyIndex, userGrid, isGameCleared });
@@ -36,6 +43,19 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
       document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
     };
   }, []);
+
+    useEffect(() => {
+    const initHint = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+      if (session) {
+        const { data } = await supabase.rpc("get_hint_usage", { p_puzzle_id: puzzle.id });
+        if (typeof data === "number") setHintUsedCount(data);
+      }
+    };
+    initHint();
+  }, [puzzle.id]);
   
   const dragInfo = useRef({
     isDragging: false,
@@ -354,6 +374,71 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     }
   };
 
+
+    const MAX_FREE_HINTS = 10;
+
+  const handleHint = async () => {
+    if (isGameCleared) return;
+
+    if (!isLoggedIn) {
+      alert("힌트는 로그인 후 이용할 수 있습니다.");
+      return;
+    }
+
+    const supabase = createClient();
+    const { data: newCount, error } = await supabase.rpc("use_puzzle_hint", {
+      p_puzzle_id: puzzle.id,
+      p_max_free: MAX_FREE_HINTS,
+    });
+
+    if (error) {
+      alert("힌트 사용 중 오류가 발생했습니다: " + error.message);
+      return;
+    }
+    if (newCount === -1) {
+      alert(`무료 힌트를 모두 사용하셨습니다! (${MAX_FREE_HINTS}개)\n광고를 보고 힌트를 더 받는 기능은 준비 중입니다.`);
+      return;
+    }
+
+    setHintUsedCount(newCount);
+
+    const result: HintResult = getHint({ width: w, height: h, data: solution }, userGrid);
+
+    let cellsToFill: { index: number; value: 1 | 2 }[] = [];
+
+    if (result.type === "fixMistake") {
+      // 실수 하나를 정답으로 고쳐줌
+      cellsToFill = [{ index: result.index, value: result.value }];
+    } else if (result.type === "reveal") {
+      // 한 줄(행 또는 열)에서 확정되는 칸들을 통째로 채움
+      cellsToFill = result.cells;
+    } else {
+      // 라인 로직으로 더 못 찾으면, 아직 안 채운 칸 중 "칠할 칸(1)"을 우선으로 무작위 하나 공개
+      const unknownFilled: number[] = [];
+      const unknownEmpty: number[] = [];
+      for (let i = 0; i < userGrid.length; i++) {
+        if (userGrid[i] !== 0) continue;
+        if (solution[i] === 1) unknownFilled.push(i);
+        else unknownEmpty.push(i);
+      }
+      const pool = unknownFilled.length > 0 ? unknownFilled : unknownEmpty;
+      if (pool.length === 0) return; // 이미 다 채워진 상태
+      const idx = pool[Math.floor(Math.random() * pool.length)];
+      cellsToFill = [{ index: idx, value: solution[idx] === 1 ? 1 : 2 }];
+    }
+
+    const newGrid = [...userGrid];
+    for (const { index, value } of cellsToFill) newGrid[index] = value;
+    setUserGrid(newGrid);
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push([...newGrid]);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+
+    setHintCells(cellsToFill.map((c) => c.index));
+    setTimeout(() => setHintCells([]), 1500);
+  };
+
   const cellSize = Math.max(10, 30 * zoomFactor);
   const hintFont = Math.max(8, 16 * zoomFactor);
   const markFont = Math.max(8, 18 * zoomFactor);
@@ -389,6 +474,10 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         #play-area:fullscreen .puzzle-comments-box, #play-area:-webkit-full-screen .puzzle-comments-box {
           display: none !important;
         }
+
+        #play-area:fullscreen .read-content, #play-area:-webkit-full-screen .read-content {
+  display: none !important;
+}
         #play-area:fullscreen .scroll-wrapper, #play-area:-webkit-full-screen .scroll-wrapper {
           max-height: none !important;
           max-width: 100vw !important;
@@ -418,6 +507,13 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           transform: translate(15px, -35px);
           white-space: nowrap;
         }
+                  @keyframes mistakeBlink {
+          0%, 100% { background-color: #ff5252; }
+          50% { background-color: #ffcdd2; }
+        }
+        .cell-mistake-blink {
+          animation: mistakeBlink 0.4s ease-in-out infinite;
+        }
         #play-area:fullscreen .toolbar-bar, #play-area:-webkit-full-screen .toolbar-bar {
           display: flex !important; /* 🌟 전체화면에서도 버튼들이 한 줄에 나오도록 flex 유지 */
           flex-wrap: nowrap !important;
@@ -440,6 +536,9 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         <button onClick={redo} title="다시" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#607D8B" }}>↪ <span className="btn-label">다시</span></button>
         <button onClick={saveProgress} title="임시저장" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#FF9800" }}>💾 <span className="btn-label">임시저장</span></button>
         <button onClick={loadProgress} title="불러오기" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#9C27B0" }}>📂 <span className="btn-label">불러오기</span></button>
+                <button onClick={handleHint} title="힌트" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", color: "white", backgroundColor: "#E91E63" }}>
+          💡 <span className="btn-label">힌트 ({MAX_FREE_HINTS - hintUsedCount})</span>
+        </button>
       </div>
 
             <div ref={gridRef} className="scroll-wrapper" style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", padding: "10px", marginBottom: "10px", border: "1px solid #ddd", background: "#fdfdfd" }}>
@@ -448,7 +547,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${w}, ${cellSize}px)`, alignItems: "end", justifyItems: "center", textAlign: "center", fontWeight: "bold", fontSize: `${hintFont}px`, paddingTop: "10px", borderBottom: "3px solid #111" }}>
             {hints.colHints.map((cHint, c) => (
-              <div key={`c-${c}`} style={{ color: solvedStatus.solvedCols[c] ? "#aaa" : "#000", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
+              <div key={`c-${c}`} style={{ color: solvedStatus.solvedCols[c] ? "#aaa" : (c === hoverCol ? "#e53935" : "#000"), display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
                 {cHint.map((num, idx) => {
                   const key = `c-${c}-${idx}`;
                   return (
@@ -463,7 +562,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           
           <div style={{ display: "grid", gridTemplateRows: `repeat(${h}, ${cellSize}px)`, justifyItems: "end", alignItems: "center", fontWeight: "bold", fontSize: `${hintFont}px`, paddingLeft: "10px", paddingRight: "5px", borderRight: "3px solid #111" }}>
             {hints.rowHints.map((rHint, r) => (
-              <div key={`r-${r}`} style={{ color: solvedStatus.solvedRows[r] ? "#aaa" : "#000", display: "flex", flexDirection: "row", justifyContent: "flex-end", alignItems: "center", width: "100%" }}>
+              <div key={`r-${r}`} style={{ color: solvedStatus.solvedRows[r] ? "#aaa" : (r === hoverRow ? "#e53935" : "#000"), display: "flex", flexDirection: "row", justifyContent: "flex-end", alignItems: "center", width: "100%" }}>
                 {rHint.map((num, idx) => {
                   const key = `r-${r}-${idx}`;
                   return (
@@ -476,25 +575,26 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${w}, ${cellSize}px)`, gridTemplateRows: `repeat(${h}, ${cellSize}px)` }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${w}, ${cellSize}px)`, gridTemplateRows: `repeat(${h}, ${cellSize}px)` }} onMouseLeave={() => { setHoverRow(null); setHoverCol(null); }}>
             {userGrid.map((cellState, index) => {
               const r = Math.floor(index / w);
               const c = index % w;
               const isThickRight = (c + 1) % 5 === 0 && c !== w - 1;
               const isThickBottom = (r + 1) % 5 === 0 && r !== h - 1;
+              const isHinted = hintCells.includes(index);
               return (
-                                <div 
+                <div 
                   key={index}
                   data-index={index}
                   className="cell"
                   onPointerDown={(e) => handlePointerDown(index, e)}
                   onPointerEnter={(e) => handlePointerEnter(index, e)}
+                  onMouseEnter={() => { setHoverRow(r); setHoverCol(c); }}
                   style={{
-                    
                     width: cellSize, height: cellSize, boxSizing: "border-box", border: "1px solid #ccc",
                     borderRight: isThickRight ? "3px solid #333" : "1px solid #ccc",
                     borderBottom: isThickBottom ? "3px solid #333" : "1px solid #ccc",
-                    backgroundColor: cellState === 1 ? "#333" : "#fff",
+                    backgroundColor: isHinted ? "#FFEB3B" : (cellState === 1 ? "#333" : "#fff"),
                     color: cellState === 2 ? (isGameCleared ? "white" : "black") : "transparent",
                     textAlign: "center", lineHeight: `${cellSize}px`, fontSize: `${markFont}px`, fontWeight: "bold",
                     userSelect: "none", cursor: "pointer"
@@ -521,7 +621,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
 
 
       {puzzle.content && (
-        <div className="read-content" style={{ marginTop: "20px", padding: "20px 0", borderTop: "1px solid #eee" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
+        <div className="read-content" style={{ marginTop: "20px", padding: "20px", borderTop: "1px solid #eee", background: "#fff", borderRadius: "8px", userSelect: "text" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
       )}
 
       <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />

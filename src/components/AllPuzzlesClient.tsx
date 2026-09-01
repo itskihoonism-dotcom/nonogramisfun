@@ -9,7 +9,8 @@ import AuthorBadge from "./AuthorBadge";
 // N시간 전/분 전 포맷 적용
 const formatDate = (dateString: string) => {
   if (!dateString) return "";
-  const d = new Date(dateString);
+  const isoString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+  const d = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -254,7 +255,7 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
                     </div>
                   </div>
                   
-                  <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                  <div className="col-author">
                     <AuthorBadge author={p.author || '익명'} info={authorInfo[p.author]} />
                   </div>
                   <div className="col-date">{formatDate(p.created_at)}</div>

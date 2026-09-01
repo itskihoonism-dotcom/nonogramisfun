@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getAuthorBadgeMap, getLevel } from "../../../lib/levelUtils";
 import LevelBadge from "../../../components/LevelBadge";
+import { sanitizeContent } from "@/lib/sanitize";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
@@ -39,11 +40,22 @@ export async function generateMetadata({
     };
   }
 
-  const size = `${puzzle.width}x${puzzle.height}`;
-  const author = puzzle.author ?? "회원";
-  const heading = `${puzzle.title} ${size} 노노그램`;
-  const description = `${author}님이 만든 ${size} 크기의 창작 노노그램(네모로직) 퍼즐입니다. 설치 없이 웹에서 무료로 플레이해 보세요.`;
-  const url = `${SITE_URL}/puzzle/${encodeURIComponent(puzzle.slug)}`;
+const size = `${puzzle.width}x${puzzle.height}`;
+const author = puzzle.author ?? "회원";
+const heading = `${puzzle.title} ${size} 노노그램`;
+
+// 🌟 설명문이 있으면 그걸 쓰고, 없으면 기존 문구
+const plain = (puzzle.content ?? "")
+  .replace(/<[^>]*>/g, " ")
+  .replace(/&nbsp;/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const description = plain
+  ? (plain.length > 155 ? plain.slice(0, 155) + "…" : plain)
+  : `${author}님이 만든 ${size} 크기의 창작 노노그램(네모로직) 퍼즐입니다. 설치 없이 웹에서 무료로 플레이해 보세요.`;
+
+const url = `${SITE_URL}/puzzle/${encodeURIComponent(puzzle.slug)}`;
 
   return {
     title: `${heading} | ${SITE_NAME}`,
@@ -169,7 +181,7 @@ export default async function PuzzlePage({
           </span>
         </div>
       </div>
-      <PlayPuzzleClient puzzle={puzzle} />
+      <PlayPuzzleClient puzzle={{ ...puzzle, content: sanitizeContent(puzzle.content) }} />
     </div>
   );
 }

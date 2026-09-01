@@ -72,7 +72,7 @@ body { background-color: #f5f6f7; color: #333; display: flex; flex-direction: co
 .col-badge { width: 50px; flex-shrink: 0; }
 .col-cate { width: 70px; flex-shrink: 0; font-weight: bold; color: #9c27b0; }
 .col-title { flex: 1; text-align: left; padding: 0 15px; font-size: 13px; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.col-author { width: 100px; flex-shrink: 0; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.col-author { width: 100px; flex-shrink: 0; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .col-date { width: 80px; flex-shrink: 0; color: #888; font-size: 12px; }
 .col-views { width: 50px; flex-shrink: 0; color: #888; font-size: 12px; }
 .col-likes { width: 50px; flex-shrink: 0; color: #888; font-size: 12px; }
