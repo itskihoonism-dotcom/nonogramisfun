@@ -44,12 +44,15 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     initialGrid: [] as number[],
     hasChanged: false,
     startClientX: 0,
-    startClientY: 0
+    startClientY: 0,
+    armedAt: 0
   });
 
-  // 클릭 직후 손 떨림 등으로 옆 칸 경계를 살짝 넘어가는 것까지 드래그로 처리되지
-  // 않도록 하는 최소 이동 거리(px). 이 값보다 적게 움직였으면 드래그로 보지 않는다.
+  // 클릭 시 손/트랙패드가 눌리면서 커서가 순간적으로 옆 칸까지 튀는 것을
+  // 진짜 드래그와 구분하기 위한 값들. 칸 하나가 30px 안팎이라 이동 거리만으로는
+  // 못 걸러내서, "누른 뒤 일정 시간이 지나야 드래그로 인정"하는 방식을 함께 쓴다.
   const DRAG_MOVE_THRESHOLD = 6;
+  const DRAG_ARM_DELAY_MS = 150;
 
   const playAreaRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -221,7 +224,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     
     const startClientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
     const startClientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
-    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true, startClientX, startClientY };
+    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true, startClientX, startClientY, armedAt: Date.now() + DRAG_ARM_DELAY_MS };
     const newGrid = [...userGrid];
     newGrid[index] = action;
     setUserGrid(newGrid);
@@ -244,6 +247,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
 
   const handlePointerEnter = (index: number, e: any) => {
     if (!dragInfo.current.isDragging || isGameCleared) return;
+    if (Date.now() < dragInfo.current.armedAt) return; // 누른 직후 순간적으로 튄 것은 드래그로 보지 않음
     const { startClientX, startClientY } = dragInfo.current;
     const dx = e.clientX - startClientX;
     const dy = e.clientY - startClientY;
@@ -254,6 +258,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
   const handleTouchMove = (e: any) => {
     if (!dragInfo.current.isDragging || isGameCleared) return;
     e.preventDefault();
+    if (Date.now() < dragInfo.current.armedAt) return; // 터치 직후 순간적으로 튄 것은 드래그로 보지 않음
     const touch = e.touches[0];
     const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
     if (targetCell && targetCell.dataset.index) {
