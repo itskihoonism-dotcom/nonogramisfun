@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, CSSProperties } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
@@ -42,17 +42,8 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     startIndex: -1,
     axis: null as "row" | "col" | null,
     initialGrid: [] as number[],
-    hasChanged: false,
-    startClientX: 0,
-    startClientY: 0,
-    armedAt: 0
+    hasChanged: false
   });
-
-  // 클릭 시 손/트랙패드가 눌리면서 커서가 순간적으로 옆 칸까지 튀는 것을
-  // 진짜 드래그와 구분하기 위한 값들. 칸 하나가 30px 안팎이라 이동 거리만으로는
-  // 못 걸러내서, "누른 뒤 일정 시간이 지나야 드래그로 인정"하는 방식을 함께 쓴다.
-  const DRAG_MOVE_THRESHOLD = 6;
-  const DRAG_ARM_DELAY_MS = 150;
 
   const playAreaRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -222,9 +213,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     const cellState = userGrid[index];
     const action = isRightClick ? (cellState === 2 ? 0 : 2) : (cellState === 0 ? 1 : cellState === 1 ? 2 : 0);
     
-    const startClientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
-    const startClientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
-    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true, startClientX, startClientY, armedAt: Date.now() + DRAG_ARM_DELAY_MS };
+    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true };
     const newGrid = [...userGrid];
     newGrid[index] = action;
     setUserGrid(newGrid);
@@ -247,18 +236,12 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
 
   const handlePointerEnter = (index: number, e: any) => {
     if (!dragInfo.current.isDragging || isGameCleared) return;
-    if (Date.now() < dragInfo.current.armedAt) return; // 누른 직후 순간적으로 튄 것은 드래그로 보지 않음
-    const { startClientX, startClientY } = dragInfo.current;
-    const dx = e.clientX - startClientX;
-    const dy = e.clientY - startClientY;
-    if (Math.sqrt(dx * dx + dy * dy) < DRAG_MOVE_THRESHOLD) return; // 클릭 시 미세한 손 떨림 무시
     applyLineDrag(index, e.clientX, e.clientY);
   };
 
   const handleTouchMove = (e: any) => {
     if (!dragInfo.current.isDragging || isGameCleared) return;
     e.preventDefault();
-    if (Date.now() < dragInfo.current.armedAt) return; // 터치 직후 순간적으로 튄 것은 드래그로 보지 않음
     const touch = e.touches[0];
     const targetCell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
     if (targetCell && targetCell.dataset.index) {
@@ -450,6 +433,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
                   className="cell"
                   onPointerDown={(e) => handlePointerDown(index, e)}
                   onPointerEnter={(e) => handlePointerEnter(index, e)}
+                  draggable={false}
                   style={{
                     width: cellSize, height: cellSize, boxSizing: "border-box", border: "1px solid #ccc",
                     borderRight: isThickRight ? "3px solid #333" : "1px solid #ccc",
@@ -457,8 +441,11 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
                     backgroundColor: cellState === 1 ? "#333" : "#fff",
                     color: cellState === 2 ? (isGameCleared ? "white" : "black") : "transparent",
                     textAlign: "center", lineHeight: `${cellSize}px`, fontSize: `${markFont}px`, fontWeight: "bold",
-                    userSelect: "none", cursor: "pointer"
-                  }}
+                    userSelect: "none", cursor: "pointer",
+                    WebkitUserSelect: "none",
+                    WebkitUserDrag: "none",
+                    WebkitTouchCallout: "none"
+                  } as CSSProperties}
                 >
                   {cellState === 2 ? "X" : ""}
                 </div>
