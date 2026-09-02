@@ -42,8 +42,14 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     startIndex: -1,
     axis: null as "row" | "col" | null,
     initialGrid: [] as number[],
-    hasChanged: false
+    hasChanged: false,
+    startClientX: 0,
+    startClientY: 0
   });
+
+  // 클릭 직후 손 떨림 등으로 옆 칸 경계를 살짝 넘어가는 것까지 드래그로 처리되지
+  // 않도록 하는 최소 이동 거리(px). 이 값보다 적게 움직였으면 드래그로 보지 않는다.
+  const DRAG_MOVE_THRESHOLD = 6;
 
   const playAreaRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -213,7 +219,9 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     const cellState = userGrid[index];
     const action = isRightClick ? (cellState === 2 ? 0 : 2) : (cellState === 0 ? 1 : cellState === 1 ? 2 : 0);
     
-    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true };
+    const startClientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const startClientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+    dragInfo.current = { isDragging: true, action, startIndex: index, axis: null, initialGrid: [...userGrid], hasChanged: true, startClientX, startClientY };
     const newGrid = [...userGrid];
     newGrid[index] = action;
     setUserGrid(newGrid);
@@ -236,6 +244,10 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
 
   const handlePointerEnter = (index: number, e: any) => {
     if (!dragInfo.current.isDragging || isGameCleared) return;
+    const { startClientX, startClientY } = dragInfo.current;
+    const dx = e.clientX - startClientX;
+    const dy = e.clientY - startClientY;
+    if (Math.sqrt(dx * dx + dy * dy) < DRAG_MOVE_THRESHOLD) return; // 클릭 시 미세한 손 떨림 무시
     applyLineDrag(index, e.clientX, e.clientY);
   };
 
