@@ -1,5 +1,6 @@
 import "./globals.css";
 import Link from "next/link";
+import Image from "next/image";
 import Sidebar from "../components/Sidebar";
 import { createClient } from "../lib/supabaseServer";
 import Footer from "../components/Footer"; 
@@ -83,12 +84,13 @@ export default async function RootLayout({
         <header className="site-header" style={{ backgroundColor: "#222", color: "#fff", width: "100%", position: "sticky", top: 0, zIndex: 1000, boxShadow: "0 2px 5px rgba(0,0,0,0.2)" }}>
           <div className="header-inner" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", padding: "0 20px", height: "100px" }}>
             <Link href="/">
-  <img 
-    src="/logo.webp" 
-    alt="로고" 
-    className="header-logo" 
-    width={150} 
-    height={75} 
+  <Image
+    src="/logo.webp"
+    alt="로고"
+    className="header-logo"
+    width={150}
+    height={75}
+    priority
     style={{ cursor: "pointer", borderRadius: "10px", marginRight: "30px", objectFit: "contain" }}
   />
 </Link>

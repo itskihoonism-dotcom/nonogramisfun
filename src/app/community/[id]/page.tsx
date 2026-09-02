@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabaseServer"; // 🌟 서버용 클라이언트로 교체!
 import Link from "next/link";
+import Image from "next/image";
 import VoteButtons from "../../../components/VoteButtons";
 import CommentSection from "../../../components/CommentSection";
 import PostActions from "../../../components/PostActions";
@@ -180,7 +181,14 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
             try {
               const images: string[] = JSON.parse(post.image);
               return images.map((url, index) => (
-                <img key={index} src={url} alt={`${post.title} 첨부 이미지 ${index + 1}`} style={{ maxWidth: "100%", borderRadius: "8px", border: "1px solid #ddd" }} />
+                <Image
+                  key={index}
+                  src={url}
+                  alt={`${post.title} 첨부 이미지 ${index + 1}`}
+                  width={800}
+                  height={600}
+                  style={{ width: "100%", height: "auto", borderRadius: "8px", border: "1px solid #ddd" }}
+                />
               ));
             } catch (e) {
               return null;
