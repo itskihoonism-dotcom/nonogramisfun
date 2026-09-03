@@ -1,9 +1,14 @@
 import { createClient } from "../../lib/supabaseServer";
 import NoticeClient from "../../components/NoticeClient";
 import KakaoAd from "../../components/KakaoAd";
+import type { Metadata } from "next";
 
-export const metadata = {
+const SITE_URL = "https://nonogramisfun.com";
+
+// 🌟 ?id= 쿼리가 붙어도 항상 /notice 자기 자신을 정식 URL로 지정 (중복 URL 방지)
+export const metadata: Metadata = {
   title: "공지사항 | NONOGRAM IS FUN",
+  alternates: { canonical: `${SITE_URL}/notice` },
 };
 
 export const dynamic = "force-dynamic";

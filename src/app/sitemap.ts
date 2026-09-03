@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
-  const [{ data: puzzles }, { data: posts }] = await Promise.all([
+  const [{ data: puzzles }, { data: posts }, { data: notices }] = await Promise.all([
     supabase
       .from("puzzles")
       .select("slug, created_at")
       .eq("is_approved", true)
       .not("slug", "is", null),
     supabase.from("community_posts").select("id, created_at"),
+    supabase.from("notices").select("id, created_at"),
   ]);
 
   return [
@@ -37,6 +38,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}/community/${p.id}`,
       lastModified: p.created_at,
       priority: 0.6,
+      changeFrequency: "monthly" as const,
+    })),
+    ...(notices ?? []).map((n) => ({
+      url: `${SITE_URL}/notice/${n.id}`,
+      lastModified: n.created_at,
+      priority: 0.3,
       changeFrequency: "monthly" as const,
     })),
   ];
