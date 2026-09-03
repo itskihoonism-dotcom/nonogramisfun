@@ -97,10 +97,14 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
   // 🌟 팝업창 안에서 렌더링될 미리보기 캔버스 (힌트 숫자까지 함께 표시)
   const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, height: number, data: number[], maxSize?: number }) => {
     if (!data || data.length === 0) return null;
-    const cellSize = Math.max(2, Math.floor(maxSize / Math.max(width, height)));
+    // 🌟 큰 퍼즐(예: 60x60)도 힌트 숫자가 읽히도록 칸 크기에 최소값을 둔다.
+    // 모달에 overflow: auto가 있어서 커진 만큼은 스크롤로 볼 수 있다.
+    const MIN_CELL_SIZE = 14;
+    const MAX_CELL_SIZE = 26;
+    const cellSize = Math.min(MAX_CELL_SIZE, Math.max(MIN_CELL_SIZE, Math.floor(maxSize / Math.max(width, height))));
     const gridWidth = width * cellSize;
     const gridHeight = height * cellSize;
-    const hintFont = Math.max(7, Math.min(12, cellSize - 2));
+    const hintFont = Math.max(9, Math.min(13, cellSize - 3));
 
     const rowHints: number[][] = [];
     for (let r = 0; r < height; r++) {
