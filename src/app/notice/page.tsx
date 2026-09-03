@@ -3,11 +3,15 @@ import Link from "next/link";
 import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
 import LevelBadge from "../../components/LevelBadge";
+import type { Metadata } from "next";
+
+const SITE_URL = "https://nonogramisfun.com";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "공지사항 | NONOGRAM IS FUN",
+  alternates: { canonical: `${SITE_URL}/notice` },
 };
 
 const POSTS_PER_PAGE = 10;
@@ -20,11 +24,11 @@ export default async function NoticePage({ searchParams }: { searchParams: any }
   const start = (currentPage - 1) * POSTS_PER_PAGE;
   const end = start + POSTS_PER_PAGE - 1;
 
-  const { data: notices, count } = await supabase
-    .from("notices")
-    .select("id, title, created_at, views", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(start, end);
+const { data: notices, count } = await supabase
+  .from("notices")
+  .select("id, title, created_at, views, comments:notice_comments(count)", { count: "exact" })
+  .order("created_at", { ascending: false })
+  .range(start, end);
 
   const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = false;
@@ -62,7 +66,6 @@ export default async function NoticePage({ searchParams }: { searchParams: any }
       <div className="board-header">
         <div className="col-badge">번호</div>
         <div className="col-title" style={{ textAlign: "center" }}>제목</div>
-        <div className="col-author">작성자</div>
         <div className="col-date">날짜</div>
         <div className="col-views">조회</div>
       </div>
@@ -71,24 +74,38 @@ export default async function NoticePage({ searchParams }: { searchParams: any }
         {(!notices || notices.length === 0) ? (
           <li style={{ padding: "40px 0", textAlign: "center", color: "#999" }}>등록된 공지사항이 없습니다.</li>
         ) : (
-          notices.map((n, idx) => (
-            <li key={n.id}>
-              <Link href={`/notice/${n.id}`} className="post-row-link">
-                <div className="col-badge" style={{ color: "#888", fontSize: "13px", fontWeight: "bold" }}>
-                  {totalCount - (start + idx)}
-                </div>
-                <div className="col-title" style={{ display: "flex", alignItems: "center", overflow: "hidden" }}>
-                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title}</span>
-                </div>
-                <div className="col-author" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                  <LevelBadge isAdmin size="sm" /> 주인장
-                </div>
-                <div className="col-date">{formatDate(n.created_at)}</div>
-                <div className="col-views">{n.views || 0}</div>
-              </Link>
-            </li>
-          ))
-        )}
+          notices.map((n, idx) => {
+  const commentCount = (n as any).comments?.[0]?.count || 0;
+  return (
+    <li key={n.id}>
+      <Link href={`/notice/${n.id}`} className="post-row-link">
+        <div className="col-badge" style={{ color: "#888", fontSize: "13px", fontWeight: "bold" }}>
+          {totalCount - (start + idx)}
+        </div>
+        <div className="col-title" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", overflow: "hidden", width: "100%" }}>
+            <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title}</span>
+            {commentCount > 0 && (
+              <span style={{ color: "#e53935", fontWeight: "bold", fontSize: "14px", marginLeft: "6px", flexShrink: 0 }}>
+                [{commentCount}]
+              </span>
+            )}
+          </div>
+          <div className="post-meta-mobile">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><LevelBadge isAdmin size="sm" /> 주인장</span>
+            <span>·</span>
+            <span>{formatDate(n.created_at)}</span>
+            <span>·</span>
+            <span>조회 {n.views || 0}</span>
+          </div>
+        </div>
+
+        <div className="col-date">{formatDate(n.created_at)}</div>
+        <div className="col-views">{n.views || 0}</div>
+      </Link>
+    </li>
+  );
+}))}
       </ul>
 
       <Pagination totalCount={totalCount} postsPerPage={POSTS_PER_PAGE} basePath="/notice" />

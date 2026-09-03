@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, CSSProperties } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
 import PuzzleComments from "./PuzzleComments";
@@ -597,8 +597,11 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
                     backgroundColor: isHinted ? "#FFEB3B" : (cellState === 1 ? "#333" : "#fff"),
                     color: cellState === 2 ? (isGameCleared ? "white" : "black") : "transparent",
                     textAlign: "center", lineHeight: `${cellSize}px`, fontSize: `${markFont}px`, fontWeight: "bold",
-                    userSelect: "none", cursor: "pointer"
-                  }}
+                    userSelect: "none", cursor: "pointer",
+                      WebkitUserSelect: "none",     // 👈 추가
+  WebkitUserDrag: "none",       // 👈 추가
+  WebkitTouchCallout: "none"    // 👈 추가
+                  } as React.CSSProperties}
                 >
                   {cellState === 2 ? "X" : ""}
                 </div>

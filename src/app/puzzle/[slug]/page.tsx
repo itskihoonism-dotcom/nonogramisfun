@@ -8,11 +8,12 @@ import { cache } from "react";
 import { getAuthorBadgeMap, getLevel } from "../../../lib/levelUtils";
 import LevelBadge from "../../../components/LevelBadge";
 import { sanitizeContent } from "@/lib/sanitize";
+import PuzzleViewStats from "@/components/PuzzleViewStats";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 // slug로 조회 (기존은 id 기준이었음)
 const getPuzzle = cache(async (slug: string) => {
@@ -87,39 +88,13 @@ export default async function PuzzlePage({
 
   if (!puzzle) notFound();
 
+  // 🌟 미승인 퍼즐은 이 주소로 아무도 못 봄 (관리자는 목록의 "미리보기"나 격자 수정 화면에서 확인)
+  if (!puzzle.is_approved) notFound();
+
   const supabase = await createClient();
 
-  // 🌟 미승인 퍼즐은 관리자(주인장)만 볼 수 있음
-  if (!puzzle.is_approved) {
-    const { data: { user } } = await supabase.auth.getUser();
-    let isAdmin = false;
-    if (user?.email) {
-      const { data: userData } = await supabase
-        .from("user_ids")
-        .select("nickname, custom_id")
-        .eq("email", user.email)
-        .maybeSingle();
-      isAdmin = userData?.nickname === "주인장" || userData?.custom_id === "admin";
-    }
-    if (!isAdmin) notFound();
-  }
-
-  // 조회수 +1 (id 기준)
-  await supabase
-    .from("puzzles")
-    .update({ views: (puzzle.views || 0) + 1 })
-    .eq("id", puzzle.id);
-
-
-
-
-      const authorInfoMap = await getAuthorBadgeMap(supabase, [puzzle.author]);
+  const authorInfoMap = await getAuthorBadgeMap(supabase, [puzzle.author]);
   const authorInfo = authorInfoMap[puzzle.author];
-
-  const { count: likeCount } = await supabase
-    .from("puzzle_likes")
-    .select("*", { count: "exact", head: true })
-    .eq("puzzle_id", puzzle.id);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
@@ -177,7 +152,7 @@ export default async function PuzzlePage({
         <div className="read-meta-text" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <span className="read-author" style={{ fontSize: "14px", fontWeight: "bold", color: "#333" }}>{puzzle.author || "익명"}</span>
           <span className="read-time-views" style={{ fontSize: "12px", color: "#888" }}>
-            {formatDate(puzzle.created_at)} | 조회수 {(puzzle.views || 0) + 1} | 👍 {likeCount || 0}
+            {formatDate(puzzle.created_at)} | <PuzzleViewStats puzzleId={puzzle.id} initialViews={puzzle.views || 0} />
           </span>
         </div>
       </div>

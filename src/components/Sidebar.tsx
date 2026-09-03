@@ -353,8 +353,8 @@ export default function Sidebar({
               notices.map((n) => (
                 <li key={n.id} style={{ padding: "6px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}>
                   
-                  {/* 🌟 2. 개별 글 클릭 시 /notice 페이지의 해당 글(아코디언)이 열리도록 파라미터 전달 */}
-                  <Link href={`/notice/${n.id}`} onClick={() => setDrawerOpen(false)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
+{/* 🌟 2. 개별 글 클릭 시 공지 상세 페이지로 이동 (SEO 중복 URL 방지) */}
+<Link href={`/notice/${n.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "5px" }}>
                     <span>📢</span>
                     <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", width: "85%" }}>
                       {n.title}

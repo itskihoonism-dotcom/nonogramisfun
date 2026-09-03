@@ -5,17 +5,51 @@ import NoticeCommentSection from "../../../components/NoticeCommentSection";
 import { notFound } from "next/navigation";
 import LevelBadge from "../../../components/LevelBadge";
 import { sanitizeContent } from "@/lib/sanitize";
+import { cache } from "react";
+import type { Metadata } from "next";
+
+const SITE_URL = "https://nonogramisfun.com";
 
 export const dynamic = "force-dynamic";
+
+
+
+const getNotice = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("notices").select("*").eq("id", id).single();
+  return data;
+});
+
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const notice = await getNotice(id);
+
+  if (!notice) {
+    return {
+      title: "공지사항을 찾을 수 없습니다 | NONOGRAM IS FUN",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return {
+    title: `${notice.title} | NONOGRAM IS FUN`,
+    alternates: { canonical: `${SITE_URL}/notice/${notice.id}` },
+  };
+}
 
 export default async function NoticeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { id } = await params;
 
-  const { data: notice } = await supabase.from("notices").select("*").eq("id", id).single();
-  if (!notice) notFound();
+const notice = await getNotice(id);
+if (!notice) notFound();
 
-  await supabase.from("notices").update({ views: (notice.views || 0) + 1 }).eq("id", id);
+  await supabase.rpc("increment_notice_views", { p_notice_id: id });
 
   const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = false;

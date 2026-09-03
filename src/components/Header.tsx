@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; 
 import { usePathname } from "next/navigation";
 import { useMobileMenu } from "./MobileMenuContext";
 
@@ -18,7 +19,7 @@ export default function Header() {
 
         @media (max-width: 850px) {
           .header-inner { padding: 0 12px; height: 60px; }
-          .header-logo { height: 40px; margin-right: 0; }
+          .header-logo { height: 40px; width: auto; margin-right: 0; }
           .menu-toggle { display: flex; }
           .header-nav { display: none; }
         }
@@ -26,7 +27,7 @@ export default function Header() {
 
       <div className="header-inner">
         <Link href="/">
-          <img src="/logo.webp" alt="로고" className="header-logo" width={150} height={75} />
+          <Image src="/logo.webp" alt="로고" className="header-logo" width={150} height={75} priority />
         </Link>
 
         <nav className="header-nav">

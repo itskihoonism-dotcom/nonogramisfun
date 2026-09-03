@@ -2,18 +2,22 @@ import { createClient } from "@/lib/supabaseServer"; // 🌟 서버용 클라이
 import Link from "next/link";
 import VoteButtons from "../../../components/VoteButtons";
 import CommentSection from "../../../components/CommentSection";
-import PostActions from "../../../components/PostActions";
 import KakaoAd from "../../../components/KakaoAd";
 import ShareButton from "../../../components/ShareButton";
 import { sanitizeContent } from "@/lib/sanitize";
+import PostPermissionActions from "@/components/PostPermissionActions";
+import CommunityViewStats from "@/components/CommunityViewStats";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAuthorBadgeMap, getLevel } from "@/lib/levelUtils";
 import LevelBadge from "@/components/LevelBadge";
-import { cache } from "react"; // 
+import { cache } from "react";  
+import Image from "next/image";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
+
+export const revalidate = 30;
 
 
 
@@ -115,39 +119,22 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   const resolvedParams = await params;
   const postId = resolvedParams.id;
 
-  // 1. 유저 권한 및 정보 가져오기 🌟 (핵심 추가 부분)
-  const { data: { user } } = await supabase.auth.getUser();
-  let currentUserNickname = "";
-  let isAdmin = false;
-  
-  if (user && user.email) {
-    const { data: userData } = await supabase.from("user_ids").select("nickname, custom_id").eq("email", user.email).maybeSingle();
-    currentUserNickname = userData?.nickname || user.user_metadata?.nickname || "";
-    isAdmin = currentUserNickname === "주인장" || userData?.custom_id === "admin";
-  }
+  // 서로 독립적인 조회 두 개를 한 번에 실행 (조회수/권한 체크는 이제 클라이언트에서 처리)
+  const [post, { data: comments }] = await Promise.all([
+    getPost(postId),
+    supabase.from("community_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true }),
+  ]);
 
-  // ✅ [수정 6] 캐싱된 getPost 재사용 (기존 인라인 쿼리 삭제)
-  const post = await getPost(postId);
-  
-  // ✅ [수정 7] 소프트 404 제거 — notFound()로 실제 404 상태코드 반환
   if (!post) notFound();
 
-  // 3. 조회수 증가 및 댓글 가져오기
-  await supabase.from("community_posts").update({ views: (post.views || 0) + 1 }).eq("id", postId);
-  const { data: comments } = await supabase.from("community_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
+  const authorInfoMap = await getAuthorBadgeMap(supabase, [post.author]);
+  const authorInfo = authorInfoMap[post.author];
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const d = new Date(dateString);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
-
-  // 🌟 현재 유저가 작성자 본인이거나 관리자인지 확인! (Boolean으로 꽉 묶어줍니다)
-  const hasPermission = Boolean(isAdmin || (currentUserNickname !== "" && currentUserNickname === post.author));
-
-
-    const authorInfoMap = await getAuthorBadgeMap(supabase, [post.author]);
-  const authorInfo = authorInfoMap[post.author];
 
 
   return (
@@ -177,7 +164,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="read-meta-text">
             <span className="read-author">{post.author}</span>
-            <span className="read-time-views">{formatDate(post.created_at)} | 조회수 {post.views + 1} | 👍 {post.likes || 0}</span>
+            <span className="read-time-views">{formatDate(post.created_at)} | <CommunityViewStats postId={post.id} initialViews={post.views || 0} /> | 👍 {post.likes || 0}</span>
           </div>
         </div>
       </div>
@@ -191,7 +178,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
             try {
               const images: string[] = JSON.parse(post.image);
               return images.map((url, index) => (
-                <img key={index} src={url} alt={`${post.title} 첨부 이미지 ${index + 1}`} style={{ maxWidth: "100%", borderRadius: "8px", border: "1px solid #ddd" }} />
+                <img key={index} src={url} alt={`${post.title} 첨부 이미지 ${index + 1}`} width={800} height={600} style={{ width: "100%", height: "auto", borderRadius: "8px", border: "1px solid #ddd" }} />
               ));
             } catch (e) {
               return null;
@@ -206,8 +193,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
           <ShareButton title={post.title} url={`${SITE_URL}/community/${post.id}`} />
         </div>
 
-        {/* 🌟 4. PostActions 컴포넌트에 권한(hasPermission)을 전달합니다! */}
-        <PostActions postId={post.id} hasPermission={hasPermission} />
+        <PostPermissionActions postId={post.id} postAuthor={post.author} />
       </div>
 
       <CommentSection postId={post.id} initialComments={comments || []} commentCount={post.comments || 0} />

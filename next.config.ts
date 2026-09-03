@@ -5,9 +5,23 @@ if (process.platform === "win32") {
 
 import type { NextConfig } from "next";
 
+
+
 const nextConfig: NextConfig = {
   /* config options here */
   allowedDevOrigins: ["192.168.219.108"],
+
+    images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "jxwhdiwwgtnyyqenkpvw.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+
+
 
 
 async redirects() {

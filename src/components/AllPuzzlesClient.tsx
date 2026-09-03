@@ -123,19 +123,65 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
     setPreviewPuzzle(null);
   };
   
-  // 🌟 팝업창 안에서 렌더링될 미리보기 캔버스 (크기 조절 가능하도록 수정)
-  const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, height: number, data: number[], maxSize?: number }) => {
-    if (!data || data.length === 0) return null;
-    const cellSize = Math.max(2, Math.floor(maxSize / Math.max(width, height)));
-    const gridWidth = width * cellSize;
-    const gridHeight = height * cellSize;
+  // 🌟 행/열 힌트 숫자 계산 (연속된 1의 개수를 순서대로)
+  const computeLineHints = (line: number[]): number[] => {
+    const hints: number[] = [];
+    let count = 0;
+    for (const v of line) {
+      if (v === 1) count++;
+      else if (count > 0) { hints.push(count); count = 0; }
+    }
+    if (count > 0) hints.push(count);
+    if (hints.length === 0) hints.push(0);
+    return hints;
+  };
+
+  // 🌟 팝업창 안에서 렌더링될 미리보기 캔버스 (힌트 숫자까지 함께 표시)
+const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, height: number, data: number[], maxSize?: number }) => {
+  if (!data || data.length === 0) return null;
+  // 🌟 큰 퍼즐(예: 60x60)도 힌트 숫자가 읽히도록 칸 크기에 최소값을 둔다.
+  // 모달에 overflow: auto가 있어서 커진 만큼은 스크롤로 볼 수 있다.
+  const MIN_CELL_SIZE = 14;
+  const MAX_CELL_SIZE = 26;
+  const cellSize = Math.min(MAX_CELL_SIZE, Math.max(MIN_CELL_SIZE, Math.floor(maxSize / Math.max(width, height))));
+  const gridWidth = width * cellSize;
+  const gridHeight = height * cellSize;
+  const hintFont = Math.max(9, Math.min(13, cellSize - 3));
+
+    const rowHints: number[][] = [];
+    for (let r = 0; r < height; r++) {
+      rowHints.push(computeLineHints(data.slice(r * width, r * width + width)));
+    }
+    const colHints: number[][] = [];
+    for (let c = 0; c < width; c++) {
+      const col: number[] = [];
+      for (let r = 0; r < height; r++) col.push(data[r * width + c]);
+      colHints.push(computeLineHints(col));
+    }
 
     return (
-      <div style={{ background: "#fff", border: "2px solid #333", padding: "5px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${width}, ${cellSize}px)`, gridTemplateRows: `repeat(${height}, ${cellSize}px)`, width: `${gridWidth}px`, height: `${gridHeight}px` }}>
-          {data.map((val, idx) => (
-            <div key={idx} style={{ backgroundColor: val === 1 ? "#333" : "transparent" }} />
-          ))}
+      <div style={{ background: "#fff", border: "2px solid #333", padding: "5px", display: "inline-block" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `auto ${gridWidth}px`, gridTemplateRows: `auto ${gridHeight}px` }}>
+          <div />
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${width}, ${cellSize}px)`, alignItems: "end", justifyItems: "center", fontSize: `${hintFont}px`, fontWeight: "bold", paddingBottom: "2px", lineHeight: 1.1 }}>
+            {colHints.map((hints, c) => (
+              <div key={`c-${c}`} style={{ display: "flex", flexDirection: "column" }}>
+                {hints.map((n, i) => <span key={i}>{n}</span>)}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateRows: `repeat(${height}, ${cellSize}px)`, alignItems: "center", justifyItems: "end", fontSize: `${hintFont}px`, fontWeight: "bold", paddingRight: "4px" }}>
+            {rowHints.map((hints, r) => (
+              <div key={`r-${r}`} style={{ display: "flex", flexDirection: "row", gap: "3px" }}>
+                {hints.map((n, i) => <span key={i}>{n}</span>)}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${width}, ${cellSize}px)`, gridTemplateRows: `repeat(${height}, ${cellSize}px)`, border: "1px solid #333" }}>
+            {data.map((val, idx) => (
+              <div key={idx} style={{ backgroundColor: val === 1 ? "#333" : "transparent", border: "1px solid #eee" }} />
+            ))}
+          </div>
         </div>
       </div>
     );
