@@ -23,6 +23,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/community`, priority: 0.9, changeFrequency: "daily" },
     { url: `${SITE_URL}/make-puzzle`, priority: 0.5 },
     { url: `${SITE_URL}/notice`, priority: 0.4 },
+    { url: `${SITE_URL}/about`, priority: 0.3 },
+    { url: `${SITE_URL}/contact`, priority: 0.3 },
     { url: `${SITE_URL}/privacy`, priority: 0.3 },
     { url: `${SITE_URL}/terms`, priority: 0.3 },
     ...(puzzles ?? []).map((p) => ({

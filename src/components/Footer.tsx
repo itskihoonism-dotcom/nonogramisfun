@@ -38,6 +38,7 @@ export default function Footer() {
       {/* 🌟 Footer 본체 */}
       <footer className="site-footer">
         <div className="footer-links">
+          <Link href="/about">소개</Link> |
           <Link href="/terms">이용약관</Link> |
           <Link href="/privacy">개인정보처리방침</Link> |
           <button onClick={() => openModal("contact")}>문의하기</button>
@@ -77,6 +78,11 @@ export default function Footer() {
               </a>
             </p>
           </div>
+          <p style={{ marginTop: "15px", fontSize: "13px", color: "#777" }}>
+            <Link href="/contact" style={{ color: "#2196F3" }} onClick={closeModal}>
+              문의 페이지 바로가기
+            </Link>
+          </p>
           <button className="ft-close-btn" onClick={closeModal}>
             닫기
           </button>
