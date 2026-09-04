@@ -29,10 +29,11 @@ function isNew(dateStr: string) {
   return (new Date().getTime() - new Date(dateStr).getTime()) / 3600000 <= 24;
 }
 
-export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialPuzzles: any[], isAdmin: boolean }) {
+export default function AllPuzzlesClient({ initialPuzzles }: { initialPuzzles: any[] }) {
   const supabase = createClient();
   const [puzzles, setPuzzles] = useState(initialPuzzles);
   const [completedPuzzleIds, setCompletedPuzzleIds] = useState<number[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // 카테고리(크기) 필터 상태
   const [selectedSize, setSelectedSize] = useState("all");
@@ -85,6 +86,40 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
     fetchCompletedPuzzles();
   }, [supabase]);
 
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) return;
+      const { data: userData } = await supabase
+        .from("user_ids")
+        .select("nickname, custom_id")
+        .eq("email", user.email)
+        .maybeSingle();
+      const admin = userData?.nickname === "주인장" || userData?.custom_id === "admin";
+      setIsAdmin(admin);
+    };
+    checkAdmin();
+  }, [supabase]);
+
+  // 🌟 관리자면 미승인 퍼즐도 따로 불러와서 목록에 합침
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchUnapproved = async () => {
+      const { data } = await supabase
+        .from("puzzles")
+        .select("*, comments:puzzle_comments(count), likes:puzzle_likes(count)")
+        .eq("is_approved", false)
+        .order("created_at", { ascending: false });
+      if (data && data.length > 0) {
+        setPuzzles(prev => {
+          const existingIds = new Set(prev.map((p: any) => p.id));
+          const merged = [...prev, ...data.filter((p: any) => !existingIds.has(p.id))];
+          return merged.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        });
+      }
+    };
+    fetchUnapproved();
+  }, [isAdmin, supabase]);
 
     useEffect(() => {
     const fetchAuthorBadges = async () => {

@@ -5,13 +5,14 @@ import KakaoAd from "../components/KakaoAd";
 import { getAuthorBadgeMap, getLevel } from "../lib/levelUtils";
 import LevelBadge from "../components/LevelBadge";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 // 날짜 포맷 함수
 function formatDate(dateStr: string) {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  const utcString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateStr) ? dateStr : dateStr + "Z";
+  const kst = new Date(new Date(utcString).getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, '0')}.${String(kst.getUTCDate()).padStart(2, '0')}`;
 }
 
 // 24시간 이내 'N' 뱃지 표시 여부

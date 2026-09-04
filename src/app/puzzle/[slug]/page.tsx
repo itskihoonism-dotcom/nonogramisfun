@@ -1,6 +1,6 @@
 import { createClient } from "../../../lib/supabaseServer";
 import Link from "next/link";
-import PlayPuzzleClient from "../../../components/PlayPuzzleClient";
+import PlayPuzzleClient from "../../../components/PlayPuzzleClientLoader";
 import KakaoAd from "../../../components/KakaoAd";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -96,11 +96,12 @@ export default async function PuzzlePage({
   const authorInfoMap = await getAuthorBadgeMap(supabase, [puzzle.author]);
   const authorInfo = authorInfoMap[puzzle.author];
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const d = new Date(dateString);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  };
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const utcString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+  const kst = new Date(new Date(utcString).getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, "0")}.${String(kst.getUTCDate()).padStart(2, "0")}`;
+};
 
   return (
     <div className="view active" style={{ display: "block" }}>

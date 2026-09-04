@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import KakaoAd from "@/components/KakaoAd";
 import TiptapEditor from "@/components/TiptapEditor";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export default function EditPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -48,10 +49,10 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
         return router.push(`/community/${postId}`);
       }
 
-      setTitle(post.title);
-      setCategory(post.category);
-      setContent(post.content);
-      setIsHtmlMode(post.is_html_mode || false);
+setTitle(post.title);
+setCategory(post.category);
+setContent(sanitizeContent(post.content));
+setIsHtmlMode(post.is_html_mode || false);
 
 
       setIsLoading(false);
@@ -170,7 +171,7 @@ export default function EditPage({ params }: { params: Promise<{ id: string }> }
               <h3 style={{ margin: 0, display: "inline-block", fontSize: "22px", color: "#111" }}>{title || '제목이 없습니다'}</h3>
             </div>
 
-            <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: content }} />
+            <div className="read-content" style={{ padding: 0, minHeight: "200px" }} dangerouslySetInnerHTML={{ __html: sanitizeContent(content) }} />
 
 
           </div>

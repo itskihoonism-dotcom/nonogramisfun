@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import TiptapEditor from "@/components/TiptapEditor";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export default function EditPuzzleContentPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -39,9 +40,9 @@ export default function EditPuzzleContentPage({ params }: { params: Promise<{ id
         return router.push(`/puzzle/${p.slug}`);
       }
 
-      setPuzzle(p);
-      setContent(p.content || "");
-            setIsHtmlMode(p.is_html_mode || false);
+setPuzzle(p);
+setContent(sanitizeContent(p.content) || "");
+setIsHtmlMode(p.is_html_mode || false);
       setIsLoading(false);
     };
     fetchData();

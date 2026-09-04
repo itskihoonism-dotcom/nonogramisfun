@@ -4,15 +4,26 @@ import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
 import LevelBadge from "../../components/LevelBadge";
 import type { Metadata } from "next";
+import NoticeWriteButton from "../../components/NoticeWriteButton";
 
 const SITE_URL = "https://nonogramisfun.com";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
-export const metadata: Metadata = {
-  title: "공지사항 | NONOGRAM IS FUN",
-  alternates: { canonical: `${SITE_URL}/notice` },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: any;
+}): Promise<Metadata> {
+  const resolved = await Promise.resolve(searchParams);
+  const page = Number(resolved?.page) || 1;
+
+  return {
+    title: "공지사항 | NONOGRAM IS FUN",
+    alternates: { canonical: `${SITE_URL}/notice` },
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 const POSTS_PER_PAGE = 10;
 
@@ -30,20 +41,15 @@ const { data: notices, count } = await supabase
   .order("created_at", { ascending: false })
   .range(start, end);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  let isAdmin = false;
-  if (user?.email) {
-    const { data: userData } = await supabase.from("user_ids").select("nickname, custom_id").eq("email", user.email).maybeSingle();
-    isAdmin = userData?.nickname === "주인장" || userData?.custom_id === "admin";
-  }
-
   const totalCount = count || 0;
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const d = new Date(dateString);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  };
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const utcString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+  const kst = new Date(new Date(utcString).getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, "0")}.${String(kst.getUTCDate()).padStart(2, "0")}`;
+};
 
   return (
     <div className="view active">
@@ -56,12 +62,10 @@ const { data: notices, count } = await supabase
         </div>
       </div>
 
-      <div className="header-title-bar">
-        <h2 style={{ margin: 0, fontSize: "20px" }}>📢 공지사항</h2>
-        {isAdmin && (
-          <Link href="/notice/write" className="header-btn" style={{ textDecoration: "none" }}>+ 공지 작성</Link>
-        )}
-      </div>
+<div className="header-title-bar">
+  <h2 style={{ margin: 0, fontSize: "20px" }}>📢 공지사항</h2>
+  <NoticeWriteButton />
+</div>
 
       <div className="board-header">
         <div className="col-badge">번호</div>

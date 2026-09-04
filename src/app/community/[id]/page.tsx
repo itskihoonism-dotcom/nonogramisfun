@@ -130,12 +130,12 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   const authorInfoMap = await getAuthorBadgeMap(supabase, [post.author]);
   const authorInfo = authorInfoMap[post.author];
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const d = new Date(dateString);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  };
-
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const utcString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+  const kst = new Date(new Date(utcString).getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, "0")}.${String(kst.getUTCDate()).padStart(2, "0")} ${String(kst.getUTCHours()).padStart(2, "0")}:${String(kst.getUTCMinutes()).padStart(2, "0")}`;
+};
 
   return (
     <div className="view active">

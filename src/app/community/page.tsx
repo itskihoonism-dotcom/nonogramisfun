@@ -5,13 +5,25 @@ import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
 import { getAuthorBadgeMap } from "../../lib/levelUtils";
 import AuthorBadge from "@/components/AuthorBadge";
+import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
-export const metadata = {
-  title: "커뮤니티 | NONOGRAM IS FUN",
-  description: "노노그램 유저들과 팁을 공유하고 소통해보세요."
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: any;
+}): Promise<Metadata> {
+  const resolved = await Promise.resolve(searchParams);
+  const page = Number(resolved?.page) || 1;
+
+  return {
+    title: "커뮤니티 | NONOGRAM IS FUN",
+    description: "노노그램 유저들과 팁을 공유하고 소통해보세요.",
+    // 🌟 2페이지 이후는 중복/저가치 콘텐츠로 분류될 수 있어 색인 제외
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 
 const POSTS_PER_PAGE = 10;
@@ -59,22 +71,27 @@ export default async function CommunityPage({ searchParams }: { searchParams: an
   }
 
   // 🌟 24시간 이내 작성글은 'N시간 전' / 'N분 전'으로 표시하는 기능 추가!
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const isoString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
-    const d = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const isoString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
+  const d = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
-    if (diffHours < 24 && now.getDate() === d.getDate()) {
-      if (diffMins < 60) return diffMins <= 0 ? "방금 전" : `${diffMins}분 전`;
-      return `${diffHours}시간 전`;
-    }
-    
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  };
+  // 🌟 서버 시간대와 무관하게 항상 한국(KST) 기준으로 날짜를 비교/표시
+  const KST_OFFSET = 9 * 60 * 60 * 1000;
+  const kstNow = new Date(now.getTime() + KST_OFFSET);
+  const kstD = new Date(d.getTime() + KST_OFFSET);
+
+  if (diffHours < 24 && kstNow.getUTCDate() === kstD.getUTCDate()) {
+    if (diffMins < 60) return diffMins <= 0 ? "방금 전" : `${diffMins}분 전`;
+    return `${diffHours}시간 전`;
+  }
+
+  return `${kstD.getUTCFullYear()}.${String(kstD.getUTCMonth() + 1).padStart(2, "0")}.${String(kstD.getUTCDate()).padStart(2, "0")}`;
+};
 
   const renderPostRow = (post: any, type: "notice" | "popular" | "regular", index: number) => {
     let badge;
