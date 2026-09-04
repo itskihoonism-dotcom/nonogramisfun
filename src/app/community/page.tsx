@@ -1,15 +1,27 @@
-import { createClient } from "../../lib/supabaseServer"; 
+import { createClient } from "../../lib/supabaseServer";
 import Link from "next/link";
 import SearchBox from "../../components/SearchBox";
 import Pagination from "../../components/Pagination";
 import KakaoAd from "../../components/KakaoAd";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "커뮤니티 | NONOGRAM IS FUN",
-  description: "노노그램 유저들과 팁을 공유하고 소통해보세요."
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: any;
+}): Promise<Metadata> {
+  const resolved = await Promise.resolve(searchParams);
+  const page = Number(resolved?.page) || 1;
+
+  return {
+    title: "커뮤니티 | NONOGRAM IS FUN",
+    description: "노노그램 유저들과 팁을 공유하고 소통해보세요.",
+    // 🌟 2페이지 이후는 중복/저가치 콘텐츠로 분류될 수 있어 색인 제외
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 
 const POSTS_PER_PAGE = 10;
