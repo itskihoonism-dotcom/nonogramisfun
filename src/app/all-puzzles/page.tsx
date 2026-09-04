@@ -1,8 +1,18 @@
 import { createClient } from "../../lib/supabaseServer"; 
 import AllPuzzlesClient from "../../components/AllPuzzlesClient"; 
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "퍼즐 목록 | NONOGRAM IS FUN",
+  description: "이용자들이 직접 만든 노노그램(네모로직) 창작 퍼즐 전체 목록입니다. 원하는 크기와 그림을 골라 무료로 플레이해보세요.",
+  openGraph: {
+    title: "퍼즐 목록 | NONOGRAM IS FUN",
+    description: "이용자들이 직접 만든 노노그램(네모로직) 창작 퍼즐 전체 목록입니다. 원하는 크기와 그림을 골라 무료로 플레이해보세요.",
+    url: "https://nonogramisfun.com/all-puzzles",
+    siteName: "NONOGRAM IS FUN",
+    type: "website",
+  },
 };
 
 // 🌟 캐시를 강제로 끄고 매번 최신 퍼즐 데이터를 가져옵니다.

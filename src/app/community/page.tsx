@@ -18,6 +18,13 @@ export async function generateMetadata({
   return {
     title: "커뮤니티 | NONOGRAM IS FUN",
     description: "노노그램 유저들과 팁을 공유하고 소통해보세요.",
+    openGraph: {
+      title: "커뮤니티 | NONOGRAM IS FUN",
+      description: "노노그램 유저들과 팁을 공유하고 소통해보세요.",
+      url: "https://nonogramisfun.com/community",
+      siteName: "NONOGRAM IS FUN",
+      type: "website",
+    },
     // 🌟 2페이지 이후는 중복/저가치 콘텐츠로 분류될 수 있어 색인 제외
     ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
   };
