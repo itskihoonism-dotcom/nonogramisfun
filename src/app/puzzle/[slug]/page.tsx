@@ -1,4 +1,5 @@
 import { createClient } from "../../../lib/supabaseServer";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import PlayPuzzleClient from "../../../components/PlayPuzzleClient";
 import KakaoAd from "../../../components/KakaoAd";
@@ -9,7 +10,24 @@ import { cache } from "react";
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+// 🌟 승인된 퍼즐 슬러그를 빌드 타임에 미리 생성 (페이지 이동을 거의 즉시로 만듦)
+// generateStaticParams는 빌드 타임(요청/쿠키 컨텍스트 없음)에 실행되므로
+// cookies()를 쓰는 supabaseServer의 createClient 대신 별도 클라이언트를 사용한다.
+export async function generateStaticParams() {
+  const supabase = createSupabaseClient(
+    "https://jxwhdiwwgtnyyqenkpvw.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4d2hkaXd3Z3RueXlxZW5rcHZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDQ3NjgsImV4cCI6MjEwMTU4MDc2OH0.e76mCgwu-v8W-cuu3fR4_4jQ9gwP60MCCESzAgoBQaU"
+  );
+  const { data } = await supabase
+    .from("puzzles")
+    .select("slug")
+    .eq("is_approved", true)
+    .not("slug", "is", null);
+
+  return (data ?? []).map((p) => ({ slug: p.slug }));
+}
 
 // slug로 조회 (기존은 id 기준이었음)
 const getPuzzle = cache(async (slug: string) => {
