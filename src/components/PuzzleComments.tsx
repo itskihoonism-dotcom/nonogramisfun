@@ -7,7 +7,7 @@ import ShareButton from "./ShareButton";
 import Link from "next/link";
 
 // 🌟 props가 puzzleId(문자열)에서 puzzle(객체 통째로)로 변경되었습니다!
-export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any, isGameCleared: boolean }) {
+export default function PuzzleComments({ puzzle }: { puzzle: any }) {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isClearedDb, setIsClearedDb] = useState(false);
@@ -29,6 +29,15 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
 
   useEffect(() => {
     checkEligibilityAndFetch();
+  }, [puzzle.id]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.puzzleId === puzzle.id) setIsClearedDb(true);
+    };
+    window.addEventListener("puzzle-cleared", handler);
+    return () => window.removeEventListener("puzzle-cleared", handler);
   }, [puzzle.id]);
 
   const checkEligibilityAndFetch = async () => {
@@ -123,9 +132,9 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim() || !user || (!isClearedDb && !isGameCleared)) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!newComment.trim() || !user || !isClearedDb) return;
     const authorName = user.user_metadata?.nickname || user.email.split('@')[0];
     const { error } = await supabase.from('puzzle_comments').insert({ puzzle_id: puzzle.id, user_id: user.id, author: authorName, content: newComment });
     if (!error) { setNewComment(""); fetchComments(); }
@@ -154,7 +163,7 @@ export default function PuzzleComments({ puzzle, isGameCleared }: { puzzle: any,
     if (!error) fetchComments();
   };
 
-  const hasClearPermission = isClearedDb || isGameCleared;
+  const hasClearPermission = isClearedDb;
   const authorName = user?.user_metadata?.nickname || user?.email?.split('@')[0] || "";
   const canDelete = isAdmin || (puzzle.author === authorName);
 

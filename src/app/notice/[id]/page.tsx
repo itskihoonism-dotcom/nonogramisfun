@@ -39,6 +39,7 @@ export async function generateMetadata({
   return {
     title: `${notice.title} | NONOGRAM IS FUN`,
     alternates: { canonical: `${SITE_URL}/notice/${notice.id}` },
+    robots: { index: false, follow: true },
   };
 }
 
@@ -64,7 +65,7 @@ const formatDate = (dateString: string) => {
   if (!dateString) return "";
   const utcString = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString) ? dateString : dateString + "Z";
   const kst = new Date(new Date(utcString).getTime() + 9 * 60 * 60 * 1000);
-  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, "0")}.${String(kst.getUTCDate()).padStart(2, "0")} ${String(kst.getUTCHours()).padStart(2, "0")}:${String(kst.getUTCMinutes()).padStart(2, "0")}`;
+  return `${kst.getUTCFullYear()}.${String(kst.getUTCMonth() + 1).padStart(2, "0")}.${String(kst.getUTCDate()).padStart(2, "0")}`;
 };
 
   return (

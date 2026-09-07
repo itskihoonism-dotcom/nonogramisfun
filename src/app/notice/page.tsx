@@ -10,18 +10,11 @@ const SITE_URL = "https://nonogramisfun.com";
 
 export const revalidate = 30;
 
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: any;
-}): Promise<Metadata> {
-  const resolved = await Promise.resolve(searchParams);
-  const page = Number(resolved?.page) || 1;
-
+export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "공지사항 | NONOGRAM IS FUN",
     alternates: { canonical: `${SITE_URL}/notice` },
-    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
+    robots: { index: false, follow: true },
   };
 }
 

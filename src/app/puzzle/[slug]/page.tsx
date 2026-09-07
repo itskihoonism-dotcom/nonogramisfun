@@ -1,4 +1,5 @@
 import { createClient } from "../../../lib/supabaseServer";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"; 
 import Link from "next/link";
 import PlayPuzzleClient from "../../../components/PlayPuzzleClientLoader";
 import KakaoAd from "../../../components/KakaoAd";
@@ -9,11 +10,27 @@ import { getAuthorBadgeMap, getLevel } from "../../../lib/levelUtils";
 import LevelBadge from "../../../components/LevelBadge";
 import { sanitizeContent } from "@/lib/sanitize";
 import PuzzleViewStats from "@/components/PuzzleViewStats";
+import PuzzleComments from "../../../components/PuzzleComments";
 
 const SITE_NAME = "NONOGRAM IS FUN";
 const SITE_URL = "https://nonogramisfun.com";
 
-export const revalidate = 30;
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const supabase = createSupabaseClient(
+    "https://jxwhdiwwgtnyyqenkpvw.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4d2hkaXd3Z3RueXlxZW5rcHZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDQ3NjgsImV4cCI6MjEwMTU4MDc2OH0.e76mCgwu-v8W-cuu3fR4_4jQ9gwP60MCCESzAgoBQaU"
+  );
+  const { data } = await supabase
+    .from("puzzles")
+    .select("slug")
+    .eq("is_approved", true)
+    .not("slug", "is", null);
+
+  return (data ?? []).map((p) => ({ slug: p.slug }));
+}
+
 
 // slug로 조회 (기존은 id 기준이었음)
 const getPuzzle = cache(async (slug: string) => {
@@ -105,17 +122,6 @@ const formatDate = (dateString: string) => {
 
   return (
     <div className="view active" style={{ display: "block" }}>
-      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-        <div className="ad-pc">
-          <KakaoAd unit="DAN-PmtHgQAd8c5EQtcy" width="728" height="90" />
-        </div>
-
-        <div className="ad-mobile">
-          <KakaoAd unit="DAN-lsUhERRXp3RaORnD" width="320" height="100" />
-        </div>
-      </div>
-      {/* 📢 카카오 애드핏 광고 끝 */}
-
       <div
         className="section-header"
         style={{
@@ -146,6 +152,19 @@ const formatDate = (dateString: string) => {
           ❮ 목록으로
         </Link>
       </div>
+
+      {/* 🌟 광고를 제목(h1) 아래로 이동 */}
+      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+        <div className="ad-pc">
+          <KakaoAd unit="DAN-PmtHgQAd8c5EQtcy" width="728" height="90" />
+        </div>
+
+        <div className="ad-mobile">
+          <KakaoAd unit="DAN-lsUhERRXp3RaORnD" width="320" height="100" />
+        </div>
+      </div>
+      {/* 📢 카카오 애드핏 광고 끝 */}
+
       <div className="read-meta-box" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "15px" }}>
         <div className="read-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {authorInfo ? <LevelBadge level={getLevel(authorInfo.points)} isAdmin={authorInfo.isAdmin} /> : "👤"}
@@ -157,7 +176,21 @@ const formatDate = (dateString: string) => {
           </span>
         </div>
       </div>
-      <PlayPuzzleClient puzzle={{ ...puzzle, content: sanitizeContent(puzzle.content) }} />
+
+      {/* 🌟 퍼즐 설명을 서버에서 직접 렌더링 (구글봇이 JS 없이도 바로 읽도록) */}
+
+
+<PlayPuzzleClient puzzle={puzzle} />
+
+{puzzle.content && (
+  <div
+    className="read-content"
+    style={{ marginTop: "20px", padding: "20px", border: "1px solid #eee", background: "#fff", borderRadius: "8px", userSelect: "text" }}
+    dangerouslySetInnerHTML={{ __html: sanitizeContent(puzzle.content) }}
+  />
+)}
+
+<PuzzleComments puzzle={puzzle} />
     </div>
   );
 }

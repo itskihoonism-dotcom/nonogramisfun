@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo, CSSProperties } from "react";
 import KakaoAd from "./KakaoAd";
 import { createClient } from "../lib/supabaseClient";
-import PuzzleComments from "./PuzzleComments";
 import { getHint, HintResult } from "../lib/hint";
 import ShareButton from "./ShareButton";
 
@@ -207,6 +206,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
     const isWin = solution.every((val: number, i: number) => val === (userGrid[i] === 1 ? 1 : 0));
     if (isWin) {
       setIsGameCleared(true);
+      window.dispatchEvent(new CustomEvent("puzzle-cleared", { detail: { puzzleId: puzzle.id } }));
       const completed = JSON.parse(localStorage.getItem("completed_nonograms") || "[]");
       if (!completed.includes(puzzle.id)) {
         completed.push(puzzle.id);
@@ -475,9 +475,7 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
           display: none !important;
         }
 
-        #play-area:fullscreen .read-content, #play-area:-webkit-full-screen .read-content {
-  display: none !important;
-}
+
         #play-area:fullscreen .scroll-wrapper, #play-area:-webkit-full-screen .scroll-wrapper {
           max-height: none !important;
           max-width: 100vw !important;
@@ -621,15 +619,6 @@ export default function PlayPuzzleClient({ puzzle }: { puzzle: any }) {
         - <b>우클릭:</b> 빈칸임을 표시하는 엑스(X) 마크를 남깁니다.<br/>
         - <b>힌트 숫자 클릭:</b> 완료한 힌트에 취소선을 그어 보기 쉽게 관리할 수 있습니다.
       </div>
-
-
-      {puzzle.content && (
-        <div className="read-content" style={{ marginTop: "20px", padding: "20px", borderTop: "1px solid #eee", background: "#fff", borderRadius: "8px", userSelect: "text" }} dangerouslySetInnerHTML={{ __html: puzzle.content }} />
-      )}
-
-      <PuzzleComments puzzle={puzzle} isGameCleared={isGameCleared} />
-
-      
 
       {isFullscreen && (
         <div style={{ marginTop: "20px", width: "100%", display: "flex", justifyContent: "center", paddingBottom: "30px" }}>

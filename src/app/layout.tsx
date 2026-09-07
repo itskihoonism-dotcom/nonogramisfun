@@ -13,6 +13,10 @@ export const metadata = {
   icons: {
     icon: '/favicon.png', 
   },
+
+    verification: {
+    google: "ro60N8fE034degmTpwUsBAn3UZC8JQ8JDzvgTguMd6U", 
+    },
   openGraph: {
     title: "NONOGRAM IS FUN - 노노그램은 정말 재밌어",
     description: "노노그램(네모로직)은 간단한 규칙과 도전적인 풀이로 두뇌를 자극하는 무료 논리 퍼즐입니다. 나만의 퍼즐을 만들고 공유해보세요.",
@@ -122,7 +126,7 @@ export default async function RootLayout({
 
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
-          strategy="afterInteractive" 
+          strategy="lazyOnload" 
         />
         
           <MobileMenuProvider>
