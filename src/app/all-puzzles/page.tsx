@@ -18,7 +18,10 @@ export const metadata: Metadata = {
 // 🌟 캐시를 강제로 끄고 매번 최신 퍼즐 데이터를 가져옵니다.
 export const dynamic = "force-dynamic";
 
-export default async function AllPuzzlesPage() {
+export default async function AllPuzzlesPage({ searchParams }: { searchParams: any }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const initialPage = Number(resolvedSearchParams?.page) || 1;
+
   const supabase = await createClient(); // 🌟 URL과 KEY는 이 안에 내장되어 있습니다.
 
   // 1. 서버에서 쿠키를 통해 안전하게 유저 정보 가져오기 (getSession 대신 getUser 사용)
@@ -49,6 +52,6 @@ export default async function AllPuzzlesPage() {
 
   // 🌟 껍데기 UI는 클라이언트 컴포넌트에 다 들어있으므로 데이터만 넘겨줍니다!
   return (
-    <AllPuzzlesClient initialPuzzles={puzzles || []} isAdmin={isAdminMode} />
+    <AllPuzzlesClient initialPuzzles={puzzles || []} isAdmin={isAdminMode} initialPage={initialPage} />
   );
 }

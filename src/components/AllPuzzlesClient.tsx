@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import KakaoAd from "../components/KakaoAd";
@@ -27,7 +27,7 @@ function isNew(dateStr: string) {
   return (new Date().getTime() - new Date(dateStr).getTime()) / 3600000 <= 24;
 }
 
-export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialPuzzles: any[], isAdmin: boolean }) {
+export default function AllPuzzlesClient({ initialPuzzles, isAdmin, initialPage = 1 }: { initialPuzzles: any[], isAdmin: boolean, initialPage?: number }) {
   const supabase = createClient();
   const [puzzles, setPuzzles] = useState(initialPuzzles);
   const [completedPuzzleIds, setCompletedPuzzleIds] = useState<number[]>([]);
@@ -48,13 +48,23 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
   );
 
   // 🌟 여기서부터 아래 코드를 추가하세요 🌟
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const POSTS_PER_PAGE = 15;
 
-  // 카테고리를 변경하면 항상 1페이지로 돌아가도록 설정
+  // 카테고리를 변경하면 항상 1페이지로 돌아가도록 설정 (최초 진입 시 URL의 page는 유지)
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setCurrentPage(1);
   }, [selectedSize]);
+
+  // 페이지네이션 링크 클릭으로 URL의 page가 바뀌면(같은 컴포넌트가 유지되는 경우) 상태도 함께 갱신
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
 
   // 현재 페이지에 보여줄 10개의 퍼즐만 쏙 잘라내기
   const totalPages = Math.ceil(filteredPuzzles.length / POSTS_PER_PAGE);
@@ -258,13 +268,13 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
         )}
       </ul>
 
-      {/* 🌟 10개씩 자르는 페이지네이션 버튼 영역 추가 */}
+      {/* 🌟 실제 링크(<a href>)로 이동하는 페이지네이션: 검색엔진도 내부 링크를 타고 각 페이지의 퍼즐을 찾아갈 수 있습니다 */}
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "center", gap: "6px", marginTop: "25px", marginBottom: "10px" }}>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-            <button
+            <Link
               key={pageNum}
-              onClick={() => setCurrentPage(pageNum)}
+              href={`/all-puzzles?page=${pageNum}`}
               style={{
                 padding: "6px 12px",
                 border: "1px solid #ddd",
@@ -273,11 +283,13 @@ export default function AllPuzzlesClient({ initialPuzzles, isAdmin }: { initialP
                 color: currentPage === pageNum ? "#fff" : "#333",
                 cursor: "pointer",
                 fontWeight: currentPage === pageNum ? "bold" : "normal",
-                transition: "all 0.2s"
+                transition: "all 0.2s",
+                textDecoration: "none",
+                display: "inline-block"
               }}
             >
               {pageNum}
-            </button>
+            </Link>
           ))}
         </div>
       )}
