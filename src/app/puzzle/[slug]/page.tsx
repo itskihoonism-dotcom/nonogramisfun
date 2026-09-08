@@ -97,10 +97,15 @@ const url = `${SITE_URL}/puzzle/${encodeURIComponent(puzzle.slug)}`;
 
 export default async function PuzzlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { slug } = await params;
+  const { from } = await searchParams;
+  const fromPage = Number(from) || 1;
+
   const puzzle = await getPuzzle(slug);
 
   if (!puzzle) notFound();
@@ -137,8 +142,8 @@ const formatDate = (dateString: string) => {
         <h1 style={{ margin: 0, fontSize: "18px", color: "#111", fontWeight: "bold" }}>
           {puzzle.title} ({puzzle.width}x{puzzle.height})
         </h1>
-        <Link
-          href="/all-puzzles"
+<Link
+  href={fromPage > 1 ? `/all-puzzles?page=${fromPage}` : "/all-puzzles"}
           style={{
             background: "none",
             border: "none",

@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 
 export const revalidate = 30;
 
-export default async function AllPuzzlesPage() {
+export default async function AllPuzzlesPage({ searchParams }: { searchParams: any }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const initialPage = Number(resolvedSearchParams?.page) || 1;
+
   const supabase = await createClient();
 
   // 🌟 관리자 여부와 무관하게 항상 승인된 퍼즐만 서버에서 가져온다 (캐싱 안전).
@@ -29,7 +32,7 @@ export default async function AllPuzzlesPage() {
 
   if (error) console.error("퍼즐 목록 불러오기 에러:", error);
 
-  return (
-    <AllPuzzlesClient initialPuzzles={puzzles || []} />
-  );
+return (
+  <AllPuzzlesClient initialPuzzles={puzzles || []} isAdmin={false} initialPage={initialPage} />
+);
 }

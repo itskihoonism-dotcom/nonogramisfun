@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "../lib/supabaseClient";
 import Link from "next/link";
 import KakaoAd from "../components/KakaoAd";
@@ -29,12 +29,12 @@ function isNew(dateStr: string) {
   return (new Date().getTime() - new Date(dateStr).getTime()) / 3600000 <= 24;
 }
 
-export default function AllPuzzlesClient({ initialPuzzles }: { initialPuzzles: any[] }) {
+export default function AllPuzzlesClient({ initialPuzzles, isAdmin: isAdminProp, initialPage = 1 }: { initialPuzzles: any[], isAdmin: boolean, initialPage?: number }) {
   const supabase = createClient();
   const [puzzles, setPuzzles] = useState(initialPuzzles);
   const [completedPuzzleIds, setCompletedPuzzleIds] = useState<number[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  
+  const [isAdmin, setIsAdmin] = useState(isAdminProp);
+
   // 카테고리(크기) 필터 상태
   const [selectedSize, setSelectedSize] = useState("all");
 
@@ -53,13 +53,21 @@ export default function AllPuzzlesClient({ initialPuzzles }: { initialPuzzles: a
   );
 
   // 🌟 여기서부터 아래 코드를 추가하세요 🌟
-  const [currentPage, setCurrentPage] = useState(1);
-  const POSTS_PER_PAGE = 15;
+const [currentPage, setCurrentPage] = useState(initialPage);
+const POSTS_PER_PAGE = 15;
 
-  // 카테고리를 변경하면 항상 1페이지로 돌아가도록 설정
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedSize]);
+const isFirstRender = useRef(true);
+useEffect(() => {
+  if (isFirstRender.current) {
+    isFirstRender.current = false;
+    return;
+  }
+  setCurrentPage(1);
+}, [selectedSize]);
+
+useEffect(() => {
+  setCurrentPage(initialPage);
+}, [initialPage]);
 
   // 현재 페이지에 보여줄 10개의 퍼즐만 쏙 잘라내기
   const totalPages = Math.ceil(filteredPuzzles.length / POSTS_PER_PAGE);
@@ -282,7 +290,7 @@ const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, 
 
             return (
               <li key={p.id} style={{ display: "flex", alignItems: "center" }}>
-                <Link href={`/puzzle/${encodeURIComponent(p.slug)}`} className="post-row-link" style={{ flex: 1 }}>
+                <Link href={`/puzzle/${encodeURIComponent(p.slug)}${currentPage > 1 ? `?from=${currentPage}` : ""}`} className="post-row-link" style={{ flex: 1 }}>
                   
                   {/* 🌟 수정된 번호 열 */}
                   <div className="col-badge" style={{ color: "#888", fontSize: "13px", fontWeight: "bold" }}>
@@ -352,11 +360,11 @@ const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, 
       {/* 🌟 10개씩 자르는 페이지네이션 버튼 영역 추가 */}
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "center", gap: "6px", marginTop: "25px", marginBottom: "10px" }}>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-            <button
-              key={pageNum}
-              onClick={() => setCurrentPage(pageNum)}
-              style={{
+{Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+  <Link
+    key={pageNum}
+    href={`/all-puzzles?page=${pageNum}`}
+    style={{
                 padding: "6px 12px",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
@@ -364,12 +372,14 @@ const PreviewCanvas = ({ width, height, data, maxSize = 300 }: { width: number, 
                 color: currentPage === pageNum ? "#fff" : "#333",
                 cursor: "pointer",
                 fontWeight: currentPage === pageNum ? "bold" : "normal",
-                transition: "all 0.2s"
-              }}
-            >
-              {pageNum}
-            </button>
-          ))}
+                transition: "all 0.2s",
+      textDecoration: "none",
+      display: "inline-block"
+    }}
+  >
+    {pageNum}
+  </Link>
+))}
         </div>
       )}
 

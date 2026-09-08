@@ -5,9 +5,7 @@ import dynamic from "next/dynamic";
 const PlayPuzzleClient = dynamic(() => import("./PlayPuzzleClient"), {
   ssr: false,
   loading: () => (
-    <div style={{ padding: "60px 0", textAlign: "center", color: "#999" }}>
-      퍼즐을 불러오는 중...
-    </div>
+    <div style={{ height: 600, background: "#f0f0f0", borderRadius: 8 }} aria-hidden="true" />
   ),
 });
 
